@@ -651,7 +651,7 @@
     document.getElementById('gfMicLabel').textContent = 'Tap to say the missing word';
     document.getElementById('gfSentence').textContent = '…generating…';
 
-    renderSidebar(w.word);
+    renderSidebar(); // no highlight — would give away the answer
 
     // Generate sentence with blank
     try {
