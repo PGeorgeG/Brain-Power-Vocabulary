@@ -459,7 +459,7 @@
     </div>
     <div class="gf-status" id="gfStatus"></div>
 
-    <button class="gf-mic-btn" id="gfMicBtn" onclick="startListening()">🎙️</button>
+    <button class="gf-mic-btn" id="gfMicBtn" onmousedown="startListening()" onmouseup="stopListening()" ontouchstart="startListening()" ontouchend="stopListening()">🎙️</button>
     <div class="gf-mic-label" id="gfMicLabel">Tap to say the missing word</div>
 
     <div class="gf-fallback">
@@ -707,28 +707,41 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
       document.getElementById('gfMicLabel').textContent = 'Speech not supported — please type below';
       return;
     }
+    if (gfRecognition) { try { gfRecognition.abort(); } catch(e) {} }
     gfRecognition = new SpeechRecognition();
     gfRecognition.lang = 'ja-JP';
     gfRecognition.interimResults = false;
     gfRecognition.maxAlternatives = 1;
+    gfRecognition.continuous = true;
 
     const btn = document.getElementById('gfMicBtn');
     const label = document.getElementById('gfMicLabel');
     btn.className = 'gf-mic-btn listening';
-    label.textContent = 'Listening…';
+    label.textContent = 'Hold… speak… release';
 
     gfRecognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
+      const transcript = e.results[e.results.length - 1][0].transcript;
       btn.className = 'gf-mic-btn';
       label.textContent = `Heard: 「${transcript}」`;
       checkGapAnswer(transcript);
     };
     gfRecognition.onerror = (e) => {
+      if (e.error === 'aborted') return; // user released — not an error
       btn.className = 'gf-mic-btn';
       label.textContent = `Error: ${e.error} — try typing below`;
     };
     gfRecognition.onend = () => { btn.className = 'gf-mic-btn'; };
     gfRecognition.start();
+  }
+
+  function stopListening() {
+    if (gfRecognition) { try { gfRecognition.stop(); } catch(e) {} }
+  }
+
+  function stopListening() {
+    if (gfRecognition) {
+      try { gfRecognition.stop(); } catch(e) {}
+    }
   }
 
   function rateGap(score) {
@@ -801,7 +814,7 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
       source.buffer = decoded;
       source.connect(audioCtx.destination);
       source.start(0);
-      label.textContent = 'Tap to say the missing word';
+      label.textContent = 'Hold to speak, release to submit';
     } catch(e) {
       label.textContent = 'TTS error: ' + e.message;
       fallbackTTS(text);
