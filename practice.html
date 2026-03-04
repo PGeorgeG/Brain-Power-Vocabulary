@@ -794,9 +794,13 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
         fallbackTTS(text);
         return;
       }
-      const blob = await res.blob();
-      const audio = new Audio(URL.createObjectURL(blob));
-      audio.play();
+      const arrayBuffer = await res.arrayBuffer();
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+      const source = audioCtx.createBufferSource();
+      source.buffer = decoded;
+      source.connect(audioCtx.destination);
+      source.start(0);
       label.textContent = 'Tap to say the missing word';
     } catch(e) {
       label.textContent = 'TTS error: ' + e.message;
