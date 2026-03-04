@@ -842,25 +842,21 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, speed })
       });
-      label.textContent = `Server replied: ${res.status} ${res.headers.get('content-type')}`;
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         label.textContent = 'TTS error: ' + (err.error || res.status);
         fallbackTTS(text);
         return;
       }
-      const arrayBuffer = await res.arrayBuffer();
-      label.textContent = `Audio bytes: ${arrayBuffer.byteLength} — decoding…`;
-      const audioCtx = getAudioCtx();
-      label.textContent = `AudioCtx state: ${audioCtx.state}`;
-      const decoded = await audioCtx.decodeAudioData(arrayBuffer);
-      const source = audioCtx.createBufferSource();
-      source.buffer = decoded;
-      source.connect(audioCtx.destination);
-      source.start(0);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      audio.onerror = (e) => { label.textContent = 'Playback error — ' + e.message; };
+      await audio.play();
       label.textContent = 'Hold to speak — release to submit';
     } catch(e) {
-      label.textContent = 'TTS error: ' + e.message;
+      label.textContent = 'Playback error: ' + e.message;
       fallbackTTS(text);
     }
   }
