@@ -481,7 +481,6 @@
     </div>
     <div class="gf-status" id="gfStatus"></div>
 
-    <div class="gf-mic-label" id="gfMicLabel"></div>
 
     <div class="gf-fallback">
       <input type="text" id="gfInput" placeholder="type it here in romaji…" onkeydown="if(event.key==='Enter') checkGapAnswer(document.getElementById('gfInput').value)" />
@@ -668,8 +667,6 @@
     document.getElementById('gfStatus').className = 'gf-status loading';
     document.getElementById('gfButtons').style.display = 'none';
     document.getElementById('gfInput').value = '';
-    document.getElementById('gfMicBtn').className = 'gf-mic-btn';
-    document.getElementById('gfMicLabel').textContent = 'Tap to say the missing word';
     document.getElementById('gfSentence').textContent = '…generating…';
 
     renderSidebar(); // no highlight — would give away the answer
@@ -725,7 +722,6 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
   function startListening() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      document.getElementById('gfMicLabel').textContent = 'Speech not supported — please type below';
       return;
     }
     if (gfRecognition) { try { gfRecognition.abort(); } catch(e) {} }
@@ -734,24 +730,15 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
     gfRecognition.interimResults = false;
     gfRecognition.maxAlternatives = 1;
     gfRecognition.continuous = true;
-
-    const btn = document.getElementById('gfMicBtn');
-    const label = document.getElementById('gfMicLabel');
-    const waveform = document.getElementById('gfWaveform');
-    btn.className = 'gf-mic-btn listening';
-    waveform.classList.add('active');
+    const label = document.getElementById('gfStatus');
     label.textContent = 'Listening…';
 
     gfRecognition.onresult = (e) => {
       const transcript = e.results[e.results.length - 1][0].transcript;
-      btn.className = 'gf-mic-btn';
-      waveform.classList.remove('active');
       label.textContent = `Heard: 「${transcript}」`;
       checkGapAnswer(transcript);
     };
     gfRecognition.onerror = (e) => {
-      waveform.classList.remove('active');
-      btn.className = 'gf-mic-btn';
       if (e.error === 'aborted') {
         label.textContent = 'Hold to speak — release to submit';
         return;
@@ -759,8 +746,6 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
       label.textContent = `Error: ${e.error} — try typing below`;
     };
     gfRecognition.onend = () => {
-      btn.className = 'gf-mic-btn';
-      waveform.classList.remove('active');
     };
     gfRecognition.start();
   }
@@ -786,8 +771,6 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
   function showGfDone() {
     document.getElementById('gfSentence').style.display = 'none';
     document.getElementById('gfButtons').style.display = 'none';
-    document.getElementById('gfMicBtn').style.display = 'none';
-    document.getElementById('gfMicLabel').style.display = 'none';
     document.querySelector('.gf-fallback').style.display = 'none';
     document.getElementById('gfStatus').textContent = '';
     document.getElementById('gfFill').style.width = '100%';
@@ -802,8 +785,6 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
   function restartGapFill() {
     document.getElementById('gfDone').classList.remove('visible');
     document.getElementById('gfSentence').style.display = '';
-    document.getElementById('gfMicBtn').style.display = '';
-    document.getElementById('gfMicLabel').style.display = '';
     document.querySelector('.gf-fallback').style.display = '';
     startGapFill();
   }
@@ -813,8 +794,6 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
     document.querySelector('.mode-select-view').classList.remove('hidden');
     document.getElementById('wordBanner').style.display = '';
     document.getElementById('gfSentence').style.display = '';
-    document.getElementById('gfMicBtn').style.display = '';
-    document.getElementById('gfMicLabel').style.display = '';
     document.querySelector('.gf-fallback').style.display = '';
     document.getElementById('gfDone').classList.remove('visible');
     renderSidebar();
@@ -830,7 +809,7 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
 
   async function readSentence(speed = 1.0) {
     const el = document.getElementById('gfSentence');
-    const label = document.getElementById('gfMicLabel');
+    const label = document.getElementById('gfStatus');
     const text = el.textContent.replace('＿＿＿', '').trim();
     if (!text) return;
     label.textContent = '…loading audio…';
