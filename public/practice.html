@@ -329,6 +329,28 @@
     border: none; cursor: pointer; font-family: 'Crimson Pro', serif; font-size: 0.95rem;
   }
 
+
+  /* Waveform */
+  .gf-waveform { display: none; justify-content: center; align-items: center; gap: 3px; height: 36px; margin-bottom: 8px; }
+  .gf-waveform.active { display: flex; }
+  .gf-waveform span {
+    display: inline-block; width: 4px; background: var(--red); border-radius: 2px;
+    animation: wave 0.8s ease-in-out infinite;
+    height: 8px;
+  }
+  .gf-waveform span:nth-child(1) { animation-delay: 0.0s; }
+  .gf-waveform span:nth-child(2) { animation-delay: 0.1s; }
+  .gf-waveform span:nth-child(3) { animation-delay: 0.2s; }
+  .gf-waveform span:nth-child(4) { animation-delay: 0.3s; }
+  .gf-waveform span:nth-child(5) { animation-delay: 0.4s; }
+  .gf-waveform span:nth-child(6) { animation-delay: 0.3s; }
+  .gf-waveform span:nth-child(7) { animation-delay: 0.2s; }
+  .gf-waveform span:nth-child(8) { animation-delay: 0.1s; }
+  .gf-waveform span:nth-child(9) { animation-delay: 0.0s; }
+  @keyframes wave {
+    0%, 100% { height: 6px; }
+    50% { height: 28px; }
+  }
 </style>
 </head>
 <body>
@@ -460,7 +482,8 @@
     <div class="gf-status" id="gfStatus"></div>
 
     <button class="gf-mic-btn" id="gfMicBtn" onmousedown="startListening()" onmouseup="stopListening()" ontouchstart="startListening()" ontouchend="stopListening()">🎙️</button>
-    <div class="gf-mic-label" id="gfMicLabel">Tap to say the missing word</div>
+    <div class="gf-waveform" id="gfWaveform"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="gf-mic-label" id="gfMicLabel">Hold to speak — release to submit</div>
 
     <div class="gf-fallback">
       <input type="text" id="gfInput" placeholder="or type it here…" onkeydown="if(event.key==='Enter') checkGapAnswer(document.getElementById('gfInput').value)" />
@@ -716,21 +739,31 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
 
     const btn = document.getElementById('gfMicBtn');
     const label = document.getElementById('gfMicLabel');
+    const waveform = document.getElementById('gfWaveform');
     btn.className = 'gf-mic-btn listening';
-    label.textContent = 'Hold… speak… release';
+    waveform.classList.add('active');
+    label.textContent = 'Listening…';
 
     gfRecognition.onresult = (e) => {
       const transcript = e.results[e.results.length - 1][0].transcript;
       btn.className = 'gf-mic-btn';
+      waveform.classList.remove('active');
       label.textContent = `Heard: 「${transcript}」`;
       checkGapAnswer(transcript);
     };
     gfRecognition.onerror = (e) => {
-      if (e.error === 'aborted') return; // user released — not an error
+      waveform.classList.remove('active');
       btn.className = 'gf-mic-btn';
+      if (e.error === 'aborted') {
+        label.textContent = 'Hold to speak — release to submit';
+        return;
+      }
       label.textContent = `Error: ${e.error} — try typing below`;
     };
-    gfRecognition.onend = () => { btn.className = 'gf-mic-btn'; };
+    gfRecognition.onend = () => {
+      btn.className = 'gf-mic-btn';
+      waveform.classList.remove('active');
+    };
     gfRecognition.start();
   }
 
@@ -789,6 +822,14 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
     renderSidebar();
   }
 
+  // Shared AudioContext — created once, resumed on user gesture
+  let sharedAudioCtx = null;
+  function getAudioCtx() {
+    if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume();
+    return sharedAudioCtx;
+  }
+
   async function readSentence(speed = 1.0) {
     const el = document.getElementById('gfSentence');
     const label = document.getElementById('gfMicLabel');
@@ -808,13 +849,13 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
         return;
       }
       const arrayBuffer = await res.arrayBuffer();
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const audioCtx = getAudioCtx();
       const decoded = await audioCtx.decodeAudioData(arrayBuffer);
       const source = audioCtx.createBufferSource();
       source.buffer = decoded;
       source.connect(audioCtx.destination);
       source.start(0);
-      label.textContent = 'Hold to speak, release to submit';
+      label.textContent = 'Hold to speak — release to submit';
     } catch(e) {
       label.textContent = 'TTS error: ' + e.message;
       fallbackTTS(text);
