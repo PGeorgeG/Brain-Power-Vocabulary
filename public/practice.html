@@ -719,46 +719,8 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
     }
   }
 
-  function startListening() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      return;
-    }
-    if (gfRecognition) { try { gfRecognition.abort(); } catch(e) {} }
-    gfRecognition = new SpeechRecognition();
-    gfRecognition.lang = 'ja-JP';
-    gfRecognition.interimResults = false;
-    gfRecognition.maxAlternatives = 1;
-    gfRecognition.continuous = true;
-    const label = document.getElementById('gfStatus');
-    label.textContent = 'Listening…';
 
-    gfRecognition.onresult = (e) => {
-      const transcript = e.results[e.results.length - 1][0].transcript;
-      label.textContent = `Heard: 「${transcript}」`;
-      checkGapAnswer(transcript);
-    };
-    gfRecognition.onerror = (e) => {
-      if (e.error === 'aborted') {
-        label.textContent = 'Hold to speak — release to submit';
-        return;
-      }
-      label.textContent = `Error: ${e.error} — try typing below`;
-    };
-    gfRecognition.onend = () => {
-    };
-    gfRecognition.start();
-  }
 
-  function stopListening() {
-    if (gfRecognition) { try { gfRecognition.stop(); } catch(e) {} }
-  }
-
-  function stopListening() {
-    if (gfRecognition) {
-      try { gfRecognition.stop(); } catch(e) {}
-    }
-  }
 
   function rateGap(score) {
     if (score === 2) gfScores.got++;
@@ -831,7 +793,7 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
       audio.onended = () => URL.revokeObjectURL(url);
       audio.onerror = (e) => { label.textContent = 'Playback error — ' + e.message; };
       await audio.play();
-      label.textContent = 'Hold to speak — release to submit';
+      label.textContent = '';
     } catch(e) {
       label.textContent = 'Playback error: ' + e.message;
       fallbackTTS(text);
