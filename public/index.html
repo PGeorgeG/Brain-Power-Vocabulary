@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>読む・学ぶ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Noto+Sans+JP:wght@300;400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap');
+
+  :root {
+    --ink: #1a1410;
+    --paper: #f5f0e8;
+    --paper-dark: #ede8d8;
+    --red: #9b2335;
+    --gold: #c4922a;
+    --muted: #8a7f6e;
+    --border: #d4ccb8;
+    --touch: 48px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Serif JP', serif;
+    min-height: 100vh;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 31px, var(--border) 31px, var(--border) 32px);
+    background-size: 100% 32px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .container { max-width: 700px; margin: 0 auto; padding: 24px 16px; }
+
+  header {
+    text-align: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--ink);
+  }
+  header::after {
+    content: '';
+    display: block;
+    width: 60%;
+    height: 1px;
+    background: var(--muted);
+    margin: 5px auto 0;
+  }
+  .title-jp { font-size: 1.8rem; font-weight: 300; letter-spacing: 0.3em; }
+  .title-en { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 0.95rem; color: var(--muted); margin-top: 3px; }
+
+  /* API Key */
+  .api-panel {
+    background: white;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gold);
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: 2px 2px 0 var(--border);
+  }
+  .api-panel h2 { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 0.9rem; color: var(--muted); margin-bottom: 10px; }
+  .api-row { display: flex; gap: 8px; }
+  .api-row input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); background: var(--paper); font-family: monospace; font-size: 0.85rem; color: var(--ink); outline: none; min-height: var(--touch); }
+  .api-row input:focus { border-color: var(--ink); }
+  .api-status { font-size: 0.8rem; margin-top: 6px; font-family: 'Crimson Pro', serif; font-style: italic; }
+  .api-status.ok { color: #4a7c59; }
+  .api-status.err { color: var(--red); }
+
+  /* Setup */
+  .setup-panel { background: white; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; box-shadow: 2px 2px 0 var(--border); }
+  .setup-panel h2 { font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; font-family: 'Crimson Pro', serif; font-style: italic; }
+  .topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .topic-btn {
+    position: relative;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    background: var(--paper);
+    cursor: pointer;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+    transition: all 0.15s;
+    min-height: var(--touch);
+    text-align: center;
+    line-height: 1.4;
+  }
+  .topic-btn:hover, .topic-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .topic-btn .btn-furigana {
+    display: none;
+    position: absolute;
+    top: 3px; left: 0; right: 0;
+    font-size: 0.55em;
+    color: var(--red);
+    font-family: 'Noto Sans JP', sans-serif;
+    line-height: 1;
+    text-align: center;
+    pointer-events: none;
+  }
+  .topic-btn:hover .btn-furigana { display: block; color: white; }
+  .topic-btn.active .btn-furigana { display: block; color: rgba(245,240,232,0.7); }
+  .topic-btn.has-furigana { padding-top: 20px; }
+  .topic-btn.custom-topic-btn { border-style: dashed; border-color: var(--gold); }
+  .topic-btn.custom-topic-btn .remove-btn { display: none; position: absolute; top: 2px; right: 4px; font-size: 0.65em; color: var(--muted); line-height: 1; }
+  .topic-btn.custom-topic-btn:hover .remove-btn { display: block; color: var(--red); }
+
+  .custom-input-row { display: flex; gap: 8px; }
+  .custom-input-row input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); background: var(--paper); font-family: 'Noto Serif JP', serif; font-size: 0.95rem; color: var(--ink); outline: none; min-height: var(--touch); }
+  .custom-input-row input:focus { border-color: var(--ink); }
+
+  /* Buttons */
+  .btn-primary { padding: 10px 20px; background: var(--ink); color: var(--paper); border: none; cursor: pointer; font-family: 'Crimson Pro', serif; font-size: 1rem; letter-spacing: 0.05em; transition: opacity 0.15s; min-height: var(--touch); white-space: nowrap; }
+  .btn-primary:hover { opacity: 0.8; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Text panel */
+  .text-panel { background: white; border: 1px solid var(--border); padding: 24px 20px; margin-bottom: 16px; box-shadow: 2px 2px 0 var(--border); min-height: 100px; max-height: 420px; overflow-y: auto; line-height: 3.4; font-size: 1.15rem; position: relative; }
+  .text-panel.loading { display: flex; align-items: center; justify-content: center; color: var(--muted); font-family: 'Crimson Pro', serif; font-style: italic; min-height: 120px; }
+  .placeholder-text { color: var(--muted); font-family: 'Crimson Pro', serif; font-style: italic; font-size: 1rem; text-align: center; padding: 20px 0; line-height: 1.8; }
+
+  /* Furigana */
+  ruby { ruby-position: over; }
+  ruby rt { font-size: 0.5em; color: var(--red); font-family: 'Noto Sans JP', sans-serif; ruby-align: center; }
+
+  /* Clickable words */
+  .word-clickable { cursor: pointer; border-bottom: 2px dotted var(--gold); transition: all 0.15s; display: inline; padding: 2px 0; }
+  .word-clickable:hover { background: rgba(196,146,42,0.15); border-bottom-color: var(--red); }
+  .word-clickable.looked-up { border-bottom-color: var(--muted); color: var(--muted); }
+
+  /* Controls */
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .btn-secondary { padding: 10px 14px; background: var(--paper); color: var(--ink); border: 1px solid var(--border); cursor: pointer; font-family: 'Crimson Pro', serif; font-size: 0.95rem; transition: all 0.15s; min-height: var(--touch); text-align: center; }
+  .btn-secondary:hover { background: var(--paper-dark); border-color: var(--ink); }
+  .btn-hard { border-color: var(--red); color: var(--red); }
+  .btn-hard:hover { background: var(--red); color: white; }
+
+  /* Lookup panel */
+  .lookup-panel { background: white; border: 1px solid var(--border); border-left: 4px solid var(--red); padding: 20px; margin-bottom: 16px; box-shadow: 2px 2px 0 var(--border); display: none; }
+  .lookup-panel.visible { display: block; }
+  .lookup-word { font-size: 1.8rem; font-weight: 400; letter-spacing: 0.1em; margin-bottom: 2px; }
+  .lookup-reading { font-family: 'Noto Sans JP', sans-serif; font-size: 0.95rem; color: var(--red); margin-bottom: 6px; }
+  .lookup-verb-info { display: none; margin-bottom: 14px; padding: 8px 12px; background: var(--paper); border-left: 3px solid var(--gold); font-family: 'Crimson Pro', serif; font-size: 0.9rem; color: var(--ink); line-height: 1.7; }
+  .lookup-verb-info.visible { display: block; }
+  .lookup-verb-info .dict-form { font-size: 1.05rem; font-family: 'Noto Serif JP', serif; }
+  .lookup-verb-info .verb-class { color: var(--muted); font-style: italic; }
+  .context-examples { border-top: 1px solid var(--border); padding-top: 14px; margin-bottom: 18px; }
+  .context-label-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .context-label { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 0.85rem; color: var(--muted); flex: 1; }
+  .context-level-btns { display: flex; gap: 6px; flex-shrink: 0; }
+  .context-level-btn { padding: 4px 10px; border: 1px solid var(--border); background: var(--paper); cursor: pointer; font-family: 'Crimson Pro', serif; font-size: 0.8rem; color: var(--muted); transition: all 0.15s; white-space: nowrap; }
+  .context-level-btn:hover { border-color: var(--ink); color: var(--ink); background: var(--paper-dark); }
+  .context-sentence { margin-bottom: 16px; padding-left: 12px; border-left: 2px solid var(--paper-dark); line-height: 3.4; font-size: 1.05rem; }
+  .guess-area { border-top: 1px solid var(--border); padding-top: 14px; }
+  .guess-label { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 0.9rem; color: var(--muted); margin-bottom: 8px; }
+  .guess-row { display: flex; gap: 8px; }
+  .guess-input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); background: var(--paper); font-family: 'Crimson Pro', serif; font-size: 1.05rem; color: var(--ink); outline: none; min-height: var(--touch); }
+  .guess-input:focus { border-color: var(--ink); }
+  .feedback-box { margin-top: 14px; padding: 14px; background: var(--paper); border: 1px solid var(--border); font-size: 0.95rem; line-height: 1.9; display: none; }
+  .feedback-box.visible { display: block; }
+  .feedback-correct { border-left: 3px solid #4a7c59; }
+  .feedback-close { border-left: 3px solid var(--gold); }
+  .feedback-off { border-left: 3px solid var(--red); }
+
+
+  /* Word log */
+  .word-log { background: white; border: 1px solid var(--border); box-shadow: 2px 2px 0 var(--border); margin-top: 4px; overflow: hidden; }
+  .word-log-toggle {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px; cursor: pointer; user-select: none;
+    border-bottom: 1px solid transparent; transition: border-color 0.2s;
+  }
+  .word-log-toggle:hover { background: var(--paper-dark); }
+  .word-log.open .word-log-toggle { border-bottom-color: var(--border); }
+  .word-log h3 { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 0.9rem; color: var(--muted); }
+  .word-log-count { font-family: 'Crimson Pro', serif; font-size: 0.85rem; color: var(--gold); }
+  .word-log-chevron { font-size: 0.7rem; color: var(--muted); transition: transform 0.2s; }
+  .word-log.open .word-log-chevron { transform: rotate(180deg); }
+  .word-log-body { display: none; padding: 16px 20px; }
+  .word-log.open .word-log-body { display: block; }
+  .log-entries { display: flex; flex-wrap: wrap; gap: 8px; }
+  .log-entry { padding: 6px 12px; border: 1px solid var(--border); font-size: 0.9rem; background: var(--paper); }
+  .log-entry .reading { font-size: 0.65em; color: var(--red); display: block; font-family: 'Noto Sans JP', sans-serif; }
+  .log-entry .meaning { font-size: 0.7em; color: #4a7c59; display: block; font-family: 'Crimson Pro', serif; font-style: italic; }
+  .log-entry .date { font-size: 0.65em; color: var(--muted); display: block; font-family: 'Crimson Pro', serif; font-style: italic; }
+  .clear-log-btn { margin-top: 12px; padding: 6px 14px; background: none; border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-family: 'Crimson Pro', serif; font-size: 0.85rem; font-style: italic; }
+  .clear-log-btn:hover { color: var(--red); border-color: var(--red); }
+
+  /* Utils */
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--ink); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 480px) {
+    .container { padding: 16px 12px; }
+    .title-jp { font-size: 1.5rem; }
+    .text-panel { padding: 18px 14px; font-size: 1.1rem; }
+    .topic-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Timer */
+  .timer-bar {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    box-shadow: 2px 2px 0 var(--border);
+  }
+  .timer-bar.visible { display: flex; }
+  .timer-track {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .timer-fill {
+    height: 100%;
+    width: 100%;
+    background: var(--gold);
+    border-radius: 3px;
+    transform-origin: left;
+    transition: background 0.5s;
+  }
+  .timer-fill.urgent { background: var(--red); }
+  .timer-digits {
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    color: var(--muted);
+    min-width: 3.2em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .timer-digits.urgent { color: var(--red); font-weight: 400; }
+
+  /* Break overlay */
+  .break-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,20,16,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .break-overlay.visible { display: flex; }
+  .break-card {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    padding: 36px 32px;
+    max-width: 340px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .break-card h2 {
+    font-family: 'Noto Serif JP', serif;
+    font-weight: 300;
+    font-size: 1.4rem;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+  }
+  .break-card p {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+  .break-countdown {
+    font-family: 'Crimson Pro', serif;
+    font-size: 3rem;
+    color: var(--gold);
+    letter-spacing: 0.05em;
+    margin-bottom: 24px;
+    min-height: 3.5rem;
+  }
+  .break-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .break-buttons .btn-primary { font-size: 0.95rem; padding: 10px 20px; }
+  .btn-outline { padding: 10px 20px; background: none; color: var(--ink); border: 1px solid var(--border); cursor: pointer; font-family: 'Crimson Pro', serif; font-size: 0.95rem; transition: all 0.15s; }
+  .btn-outline:hover { border-color: var(--ink); background: var(--paper-dark); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="title-jp">読む・学ぶ</div>
+    <div class="title-en">Read & Learn — Japanese Vocabulary Practice</div>
+    <a href="practice.html" style="position:absolute;top:4px;right:0;font-family:'Crimson Pro',serif;font-style:italic;font-size:0.85rem;color:var(--muted);text-decoration:none;" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--muted)'">練習 →</a>
+  </header>
+
+    <div class="api-status" id="apiStatus"></div>
+  </div>
+
+  <div class="setup-panel">
+    <h2>Choose a topic</h2>
+    <div class="topic-grid" id="topicGrid">
+      <button class="topic-btn has-furigana" onclick="selectTopic(this,'自転車')"><span class="btn-furigana">じてんしゃ</span>🚴 自転車</button>
+      <button class="topic-btn has-furigana" onclick="selectTopic(this,'散歩と自然')"><span class="btn-furigana">さんぽ・しぜん</span>🌿 散歩・自然</button>
+      <button class="topic-btn has-furigana" onclick="selectTopic(this,'フライフィッシング')"><span class="btn-furigana">フライフィッシング</span>🎣 釣り</button>
+      <button class="topic-btn has-furigana" onclick="selectTopic(this,'木工')"><span class="btn-furigana">もっこう</span>🪵 木工</button>
+      <button class="topic-btn has-furigana" onclick="selectTopic(this,'革細工')"><span class="btn-furigana">かわざいく</span>🧵 革細工</button>
+      <button class="topic-btn has-furigana" onclick="selectTopic(this,'日常生活')"><span class="btn-furigana">にちじょうせいかつ</span>☕ 日常生活</button>
+      <button class="topic-btn has-furigana" onclick="selectTopic(this,'季節と天気')"><span class="btn-furigana">きせつ・てんき</span>🌸 季節・天気</button>
+    </div>
+    <div class="custom-input-row">
+      <input type="text" id="customTopic" placeholder="Or type your own topic in English or Japanese…" />
+      <button class="btn-primary" onclick="generateText()">Go →</button>
+      <button class="btn-primary" style="background:var(--gold)" onclick="saveCustomTopic()" title="Translate and save as a topic button">＋</button>
+    </div>
+  </div>
+
+  <div class="timer-bar" id="timerBar">
+    <div class="timer-track"><div class="timer-fill" id="timerFill"></div></div>
+    <div class="timer-digits" id="timerDigits">4:30</div>
+  </div>
+
+  <div class="text-panel" id="textPanel">
+    <div class="placeholder-text">Choose a topic above to generate your reading text.<br>Tap any underlined word to look it up.</div>
+  </div>
+
+  <div class="controls" id="controls" style="display:none">
+    <button class="btn-secondary btn-hard" onclick="simplifyText()">😓 Too hard</button>
+    <button class="btn-secondary" onclick="harderText()">💪 Too easy</button>
+    <button class="btn-secondary" onclick="newText()">↺ New text</button>
+    <button class="btn-secondary" onclick="clearLookup()">✕ Close</button>
+  </div>
+
+  <div class="lookup-panel" id="lookupPanel">
+    <div class="lookup-word" id="lookupWord"></div>
+    <div class="lookup-reading" id="lookupReading"></div>
+    <div class="lookup-verb-info" id="lookupVerbInfo">
+      <span class="dict-form" id="verbDictForm"></span>
+      <span class="verb-class" id="verbClass"></span>
+    </div>
+    <div class="context-examples">
+      <div class="context-label-row">
+        <span class="context-label">Work out the meaning from these examples — then guess below.</span>
+        <div class="context-level-btns">
+          <button class="context-level-btn" onclick="reloadExamples('easier')">😓 Simpler</button>
+          <button class="context-level-btn" onclick="reloadExamples('harder')">💪 Harder</button>
+        </div>
+      </div>
+      <div id="contextSentences"></div>
+    </div>
+    <div class="guess-area">
+      <div class="guess-label">What do you think this word means?</div>
+      <div class="guess-row">
+        <input type="text" class="guess-input" id="guessInput" placeholder="Your guess in English…" onkeydown="if(event.key==='Enter') checkGuess()" />
+        <button class="btn-primary" onclick="checkGuess()">Check →</button>
+      </div>
+      <div class="feedback-box" id="feedbackBox"></div>
+    </div>
+  </div>
+
+  <div class="word-log" id="wordLog">
+    <div class="word-log-toggle" onclick="toggleWordLog()">
+      <h3>Your vocabulary log</h3>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="word-log-count" id="logCount"></span>
+        <span class="word-log-chevron">▼</span>
+      </div>
+    </div>
+    <div class="word-log-body">
+      <div class="log-entries" id="logEntries"></div>
+      <button class="clear-log-btn" onclick="clearLog()">Clear log</button>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<!-- Break overlay -->
+<div class="break-overlay" id="breakOverlay">
+  <div class="break-card">
+    <h2>よくできました 🌸</h2>
+    <p>Well done — 4½ minutes of focused reading.<br>A short break helps lock in what you've learned.</p>
+    <div class="break-countdown" id="breakCountdown"></div>
+    <div class="break-buttons">
+      <button class="btn-primary" onclick="startBreak()">Take a 3 min break</button>
+      <button class="btn-outline" onclick="dismissBreak()">Keep going</button>
+    </div>
+  </div>
+</div>
+<script>
+  const STORAGE_KEY = 'yomu_manabi_wordlog';
+  const TOPICS_KEY  = 'yomu_custom_topics';
+  let currentTopic = '';
+  let currentLevel = 'B1';
+  let currentTextRaw = '';
+  let currentLookupWord = '';
+  let wordLog = [];
+
+  // ── Timer ────────────────────────────────────────────────────────────────
+  const SESSION_SECS = 4 * 60 + 30;  // 4:30
+  const BREAK_SECS   = 3 * 60;       // 3:00
+  let timerInterval  = null;
+  let timerRemaining = SESSION_SECS;
+  let breakInterval  = null;
+  let breakRemaining = BREAK_SECS;
+
+  // Soft ding using Web Audio API
+  function playDing() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Two gentle sine tones — a fifth apart
+      [[523.25, 0, 0.6], [392, 0.25, 0.5], [523.25, 0.5, 0.4]].forEach(([freq, when, gain]) => {
+        const osc = ctx.createOscillator();
+        const vol = ctx.createGain();
+        osc.connect(vol); vol.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        vol.gain.setValueAtTime(0, ctx.currentTime + when);
+        vol.gain.linearRampToValueAtTime(gain * 0.18, ctx.currentTime + when + 0.04);
+        vol.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + when + 1.2);
+        osc.start(ctx.currentTime + when);
+        osc.stop(ctx.currentTime + when + 1.3);
+      });
+    } catch(e) {}
+  }
+
+  function startSessionTimer() {
+    clearInterval(timerInterval);
+    timerRemaining = SESSION_SECS;
+    updateTimerDisplay();
+    document.getElementById('timerBar').classList.add('visible');
+
+    timerInterval = setInterval(() => {
+      timerRemaining--;
+      updateTimerDisplay();
+      if (timerRemaining <= 0) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        playDing();
+        showBreakOverlay();
+      }
+    }, 1000);
+  }
+
+  function stopSessionTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    document.getElementById('timerBar').classList.remove('visible');
+  }
+
+  function updateTimerDisplay() {
+    const mins = Math.floor(timerRemaining / 60);
+    const secs = timerRemaining % 60;
+    const str = `${mins}:${String(secs).padStart(2, '0')}`;
+    const urgent = timerRemaining <= 30;
+    document.getElementById('timerDigits').textContent = str;
+    document.getElementById('timerDigits').className = 'timer-digits' + (urgent ? ' urgent' : '');
+    document.getElementById('timerFill').className = 'timer-fill' + (urgent ? ' urgent' : '');
+    // Shrink the fill bar left-to-right
+    const pct = timerRemaining / SESSION_SECS;
+    document.getElementById('timerFill').style.transform = `scaleX(${pct})`;
+  }
+
+  function showBreakOverlay() {
+    document.getElementById('breakCountdown').textContent = '';
+    document.getElementById('breakOverlay').classList.add('visible');
+  }
+
+  function startBreak() {
+    breakRemaining = BREAK_SECS;
+    clearInterval(breakInterval);
+    updateBreakDisplay();
+
+    breakInterval = setInterval(() => {
+      breakRemaining--;
+      updateBreakDisplay();
+      if (breakRemaining <= 0) {
+        clearInterval(breakInterval);
+        playDing();
+        document.getElementById('breakCountdown').textContent = '🌸';
+        // Auto-dismiss after 2s and restart session timer
+        setTimeout(() => {
+          dismissBreak();
+          startSessionTimer();
+        }, 2000);
+      }
+    }, 1000);
+  }
+
+  function updateBreakDisplay() {
+    const mins = Math.floor(breakRemaining / 60);
+    const secs = breakRemaining % 60;
+    document.getElementById('breakCountdown').textContent =
+      `${mins}:${String(secs).padStart(2, '0')}`;
+  }
+
+  function dismissBreak() {
+    clearInterval(breakInterval);
+    breakInterval = null;
+    document.getElementById('breakOverlay').classList.remove('visible');
+    // Restart session timer fresh
+    startSessionTimer();
+  }
+
+
+  // ── Word log ─────────────────────────────────────────────────────────────
+  function loadWordLog() {
+    try { wordLog = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { wordLog = []; }
+    renderWordLog();
+  }
+  function saveWordLog() { localStorage.setItem(STORAGE_KEY, JSON.stringify(wordLog)); }
+  function addToLog(word, reading, guess, meaning) {
+    if (wordLog.find(w => w.word === word)) return;
+    wordLog.unshift({ word, reading, guess, meaning, date: new Date().toLocaleDateString('en-CA') });
+    saveWordLog(); renderWordLog();
+  }
+  function stripRuby(str) {
+    // Remove <rt>...</rt> and <ruby>/<\/ruby> tags, leaving just the base kanji text
+    return str.replace(/<rt>[^<]*<\/rt>/g, '').replace(/<\/?ruby>/g, '');
+  }
+
+  function renderWordLog() {
+    const log = document.getElementById('wordLog');
+    if (!wordLog.length) { log.className = 'word-log'; return; }
+    log.className = log.className.includes('open') ? 'word-log open' : 'word-log';
+    document.getElementById('logCount').textContent = `${wordLog.length} word${wordLog.length !== 1 ? 's' : ''}`;
+    document.getElementById('logEntries').innerHTML = wordLog.map(w => `
+      <div class="log-entry">
+        ${stripRuby(w.word)}
+        ${w.reading ? `<span class="reading">${w.reading}</span>` : ''}
+        ${w.meaning ? `<span class="meaning">${w.meaning}</span>` : ''}
+        <span class="date">${w.date}</span>
+      </div>`).join('');
+    // Auto-open when a new word is added
+    log.classList.add('open');
+  }
+
+  function toggleWordLog() {
+    const log = document.getElementById('wordLog');
+    if (wordLog.length) log.classList.toggle('open');
+  }
+  function clearLog() {
+    wordLog = []; saveWordLog(); renderWordLog();
+  }
+
+  // ── Claude API (proxied through Railway server) ──────────────────────────
+  async function callClaude(prompt) {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] })
+    });
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.content.map(c => c.text || '').join('');
+  }
+
+  // ── Furigana: ensure <rt> is always after base text ──────────────────────
+  function fixRuby(el) {
+    el.querySelectorAll('ruby').forEach(ruby => {
+      const rt = ruby.querySelector('rt');
+      if (rt) ruby.appendChild(rt); // move rt to end if not already there
+    });
+  }
+
+  // ── Topics ───────────────────────────────────────────────────────────────
+  function selectTopic(btn, topic) {
+    document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTopic = topic;
+    document.getElementById('customTopic').value = '';
+  }
+
+  function loadCustomTopics() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(TOPICS_KEY)) || [];
+      saved.forEach(t => addTopicButton(t.japanese, t.reading, t.emoji, false));
+    } catch(e) {}
+  }
+  function saveCustomTopics() {
+    const btns = document.querySelectorAll('.custom-topic-btn');
+    const topics = Array.from(btns).map(b => ({ japanese: b.dataset.topic, reading: b.dataset.reading, emoji: b.dataset.emoji }));
+    localStorage.setItem(TOPICS_KEY, JSON.stringify(topics));
+  }
+  function addTopicButton(japanese, reading, emoji, save = true) {
+    const grid = document.getElementById('topicGrid');
+    const btn = document.createElement('button');
+    btn.className = 'topic-btn custom-topic-btn' + (reading ? ' has-furigana' : '');
+    btn.dataset.topic = japanese;
+    btn.dataset.reading = reading || '';
+    btn.dataset.emoji = emoji || '📖';
+    btn.innerHTML = `${reading ? `<span class="btn-furigana">${reading}</span>` : ''}<span class="remove-btn" onclick="removeTopicBtn(event,this.parentElement)">✕</span>${emoji || '📖'} ${japanese}`;
+    btn.addEventListener('click', function(e) {
+      if (e.target.classList.contains('remove-btn')) return;
+      selectTopic(this, japanese);
+    });
+    grid.appendChild(btn);
+    if (save) saveCustomTopics();
+  }
+  function removeTopicBtn(e, btn) {
+    e.stopPropagation();
+    if (!confirm(`Remove "${btn.dataset.topic}" from topics?`)) return;
+    btn.remove(); saveCustomTopics();
+  }
+  async function saveCustomTopic() {
+    const input = document.getElementById('customTopic').value.trim();
+    if (!input) { alert('Type a topic first.'); return; }
+    const btn = document.querySelector('.custom-input-row button:last-child');
+    btn.textContent = '…'; btn.disabled = true;
+    try {
+      const result = await callClaude(`Convert this topic into natural Japanese for a reading topic button.
+Topic: "${input}"
+Respond with JSON only, no markdown:
+{"japanese": "Japanese topic (2-6 chars)", "reading": "hiragana reading", "emoji": "one relevant emoji"}`);
+      const parsed = JSON.parse(result.replace(/```json|```/g, '').trim());
+      addTopicButton(parsed.japanese, parsed.reading, parsed.emoji, true);
+      document.getElementById('customTopic').value = '';
+    } catch(e) { alert('Could not save topic. Please try again.'); }
+    finally { btn.textContent = '＋'; btn.disabled = false; }
+  }
+
+  // ── Generate text ─────────────────────────────────────────────────────────
+  async function generateText() {
+    const custom = document.getElementById('customTopic').value.trim();
+    if (custom) currentTopic = custom;
+    if (!currentTopic) { alert('Please choose or type a topic first.'); return; }
+
+    const panel = document.getElementById('textPanel');
+    panel.className = 'text-panel loading';
+    panel.innerHTML = '<span class="spinner"></span> Generating your text…';
+    document.getElementById('controls').style.display = 'none';
+    clearLookup();
+
+    const prompt = `Write a short Japanese reading passage for a ${currentLevel}-level adult learner who was conversational in Japanese 30 years ago and is reactivating their skills.
+
+Topic: ${currentTopic}
+Length: approximately 100 Japanese characters — no more than 5 sentences. Keep it concise.
+
+CRITICAL FURIGANA RULES:
+Every kanji must have furigana using HTML ruby tags. Follow these rules exactly:
+1. Each <ruby> tag wraps ONE kanji or compound word with its reading: <ruby>食<rt>た</rt></ruby>べる
+2. The reading in <rt> must be the CORRECT reading for THAT specific kanji in context
+3. NEVER put the reading of one kanji above a different kanji
+4. For compound words where the reading spans multiple kanji, wrap them together: <ruby>食事<rt>しょくじ</rt></ruby>
+5. The kanji MUST come first inside <ruby>, then <rt>reading</rt> — never reversed
+6. Do NOT add furigana to hiragana or katakana — only kanji
+
+- Write entirely in Japanese, no English, no romaji
+- Natural authentic language, short sentences
+- Mix familiar vocabulary with a few interesting words to discover
+- No explanation or preamble — output ONLY the Japanese text
+- Wrap each word or short phrase in a span like this:
+  <span class="word-clickable" data-word="dictionary form" data-reading="hiragana reading">SURFACE TEXT WITH RUBY TAGS</span>
+  The span's visible content must be ONLY the ruby-annotated Japanese — never kanji followed by loose hiragana
+- Example: <span class="word-clickable" data-word="楽しむ" data-reading="たのしむ"><ruby>楽<rt>たの</rt></ruby>しむ</span>
+- For verb conjugations, data-word is the dictionary form, visible content is the conjugated form with ruby`;
+
+    try {
+      const text = await callClaude(prompt);
+      currentTextRaw = text;
+      renderText(panel, text);
+    } catch(e) {
+      panel.className = 'text-panel';
+      panel.innerHTML = `<span style="color:var(--red)">Error: ${e.message}</span>`;
+    }
+  }
+
+  function renderText(panel, text) {
+    panel.className = 'text-panel fade-in';
+    panel.innerHTML = text;
+    fixRuby(panel);
+    document.getElementById('controls').style.display = 'grid';
+    panel.querySelectorAll('.word-clickable').forEach(el => el.addEventListener('click', () => lookupWord(el)));
+    startSessionTimer();
+  }
+
+  // ── Lookup ────────────────────────────────────────────────────────────────
+  async function lookupWord(el) {
+    if (el.classList.contains('looked-up')) return;
+    const word = el.dataset.word || el.textContent;       // dictionary form
+    const reading = el.dataset.reading || '';
+    const surfaceText = el.textContent.trim();
+    currentLookupWord = word; // store clean dict form for addToLog
+
+    document.getElementById('lookupWord').textContent = word;
+    document.getElementById('lookupReading').textContent = reading ? `（${reading}）` : '';
+    document.getElementById('lookupVerbInfo').className = 'lookup-verb-info';
+    document.getElementById('contextSentences').innerHTML = '<span class="spinner"></span> Finding examples…';
+    document.getElementById('feedbackBox').className = 'feedback-box';
+    document.getElementById('guessInput').value = '';
+
+    const lookupPanel = document.getElementById('lookupPanel');
+    lookupPanel.className = 'lookup-panel visible fade-in';
+    lookupPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Run verb detection and context examples in parallel
+    const verbPrompt = `Is the Japanese word「${word}」(surface form:「${surfaceText}」) a verb?
+
+Respond with JSON only, no markdown:
+If it IS a verb:
+{"isVerb": true, "dictForm": "dictionary form (e.g. 食べる)", "dictReading": "hiragana reading of dict form", "tenseUsed": "brief label e.g. past tense / て-form / negative", "verbClass": "る-verb / う-verb / irregular"}
+If it is NOT a verb:
+{"isVerb": false}`;
+
+    const examplesPrompt = `I am a ${currentLevel}-level Japanese learner reactivating conversational skills from 30 years ago. I clicked on「${word}」(reading: ${reading || 'unknown'}).
+
+Give me 3 rich varied Japanese sentences to help me INFER the meaning through context.
+
+CRITICAL FURIGANA RULES — follow exactly:
+1. Each <ruby> tag wraps ONE kanji or compound with its correct reading: <ruby>食事<rt>しょくじ</rt></ruby>
+2. The reading in <rt> must match THAT specific kanji — never the reading of a different kanji
+3. Kanji MUST come first inside <ruby>, then <rt>reading</rt> — never reversed
+4. Do NOT add furigana to hiragana or katakana — kanji only
+
+- Japanese only — no English, no translation
+- Each sentence shows a different context or nuance
+- ${currentLevel} level grammar
+- Number them 1. 2. 3.
+- Output ONLY the numbered sentences`;
+
+    // Fire both in parallel
+    const [verbResult, examplesResult] = await Promise.allSettled([
+      callClaude(verbPrompt),
+      callClaude(examplesPrompt)
+    ]);
+
+    // Handle verb info
+    if (verbResult.status === 'fulfilled') {
+      try {
+        const v = JSON.parse(verbResult.value.replace(/```json|```/g, '').trim());
+        if (v.isVerb) {
+          const infoEl = document.getElementById('lookupVerbInfo');
+          const dictEl = document.getElementById('verbDictForm');
+          const classEl = document.getElementById('verbClass');
+
+          // Show dict form with furigana if different from surface
+          const dictHtml = v.dictForm !== surfaceText
+            ? `<ruby>${v.dictForm}<rt>${v.dictReading}</rt></ruby>`
+            : `<ruby>${v.dictForm}<rt>${v.dictReading}</rt></ruby>`;
+
+          dictEl.innerHTML = dictHtml + (v.tenseUsed ? ` — <em>${v.tenseUsed}</em>` : '');
+          classEl.textContent = ` · ${v.verbClass}`;
+          infoEl.className = 'lookup-verb-info visible';
+          fixRuby(infoEl);
+
+          // Also show dict form as the main heading if surface differs
+          if (v.dictForm && v.dictForm !== surfaceText) {
+            document.getElementById('lookupWord').textContent = surfaceText;
+          }
+        }
+      } catch(e) { /* not a verb or parse failed — no problem */ }
+    }
+
+    // Handle examples
+    if (examplesResult.status === 'fulfilled') {
+      const div = document.getElementById('contextSentences');
+      div.innerHTML = examplesResult.value.trim().split(/\n/).filter(s => s.trim())
+        .map(s => `<div class="context-sentence fade-in">${s}</div>`).join('');
+      fixRuby(div);
+    } else {
+      document.getElementById('contextSentences').innerHTML = '<span style="color:var(--red)">Error. Please try again.</span>';
+    }
+  }
+
+  async function reloadExamples(difficulty) {
+    if (!currentLookupWord) return;
+    const div = document.getElementById('contextSentences');
+    div.innerHTML = '<span class="spinner"></span> Finding examples…';
+
+    const levelNote = difficulty === 'easier'
+      ? `Use simpler vocabulary and grammar than before — aim one level below ${currentLevel}. Short sentences, common words only.`
+      : `Use richer vocabulary and more complex grammar than before — aim one level above ${currentLevel}.`;
+
+    const prompt = `I am a ${currentLevel}-level Japanese learner. Give me 3 NEW Japanese example sentences for the word「${currentLookupWord}」to help me infer its meaning through context.
+
+${levelNote}
+
+CRITICAL FURIGANA RULES — follow exactly:
+1. Each <ruby> tag wraps ONE kanji or compound with its correct reading: <ruby>食事<rt>しょくじ</rt></ruby>
+2. The reading in <rt> must match THAT specific kanji — never the reading of a different kanji
+3. Kanji MUST come first inside <ruby>, then <rt>reading</rt> — never reversed
+4. Do NOT add furigana to hiragana or katakana — kanji only
+
+- Japanese only — no English, no translation
+- Number them 1. 2. 3.
+- Output ONLY the numbered sentences`;
+
+    try {
+      const examples = await callClaude(prompt);
+      div.innerHTML = examples.trim().split(/\n/).filter(s => s.trim())
+        .map(s => `<div class="context-sentence fade-in">${s}</div>`).join('');
+      fixRuby(div);
+    } catch(e) {
+      div.innerHTML = '<span style="color:var(--red)">Error. Please try again.</span>';
+    }
+  }
+  async function checkGuess() {
+    const guess = document.getElementById('guessInput').value.trim();
+    if (!guess) return;
+    const word = currentLookupWord || document.getElementById('lookupWord').textContent;
+    const reading = document.getElementById('lookupReading').textContent;
+    const feedbackBox = document.getElementById('feedbackBox');
+
+    feedbackBox.innerHTML = '<span class="spinner"></span>';
+    feedbackBox.className = 'feedback-box visible';
+
+    const prompt = `A Japanese learner guessed the meaning of「${word}」.
+Their guess: "${guess}"
+
+Respond in English (3–4 sentences max):
+- Correct/close: affirm warmly, give precise meaning, add usage insight
+- Partially right: acknowledge what's right, gently correct the rest
+- Off: be encouraging, explain meaning, show why context clues point to it
+
+If you include any Japanese words or phrases in your response, wrap each kanji with furigana using this exact format: <ruby>漢字<rt>かんじ</rt></ruby>
+The kanji base text MUST come first, then the rt tag — never reversed.
+
+End with: **meaning: [definition]**`;
+
+    try {
+      const feedback = await callClaude(prompt);
+      const lower = feedback.toLowerCase();
+      let cls = 'feedback-box visible ';
+      if (lower.includes('correct') || lower.includes('exactly') || lower.includes('spot on')) cls += 'feedback-correct';
+      else if (lower.includes('close') || lower.includes('partially') || lower.includes('part')) cls += 'feedback-close';
+      else cls += 'feedback-off';
+      feedbackBox.className = cls + ' fade-in';
+      feedbackBox.innerHTML = feedback.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      fixRuby(feedbackBox);
+      const meaningMatch = feedback.match(/meaning:\s*(.+?)(\.|$)/i);
+      addToLog(word, reading, guess, meaningMatch ? meaningMatch[1].trim() : '');
+      document.querySelectorAll(`.word-clickable[data-word="${word}"]`).forEach(el => el.classList.add('looked-up'));
+    } catch(e) { feedbackBox.innerHTML = 'Error. Please try again.'; }
+  }
+
+  // ── Difficulty ────────────────────────────────────────────────────────────
+  async function simplifyText() {
+    if (currentLevel === 'B1') currentLevel = 'A2';
+    else if (currentLevel === 'A2') currentLevel = 'A1';
+    await rewriteText(`Rewrite at a simpler level (${currentLevel}): more common vocabulary, shorter sentences, same topic and meaning.`);
+  }
+  async function harderText() {
+    if (currentLevel === 'B1') currentLevel = 'B2';
+    else if (currentLevel === 'B2') currentLevel = 'C1';
+    await rewriteText(`Rewrite at a more advanced level (${currentLevel}): richer vocabulary, more nuance, same topic.`);
+  }
+  async function rewriteText(instruction) {
+    const panel = document.getElementById('textPanel');
+    panel.className = 'text-panel loading';
+    panel.innerHTML = '<span class="spinner"></span> Rewriting…';
+    clearLookup();
+    const prompt = `${instruction}
+Keep the result to approximately 100 Japanese characters — no more than 5 sentences.
+
+CRITICAL FURIGANA RULES — follow exactly:
+1. Each <ruby> tag wraps ONE kanji or compound with its correct reading: <ruby>食事<rt>しょくじ</rt></ruby>
+2. The reading in <rt> must match THAT specific kanji — never the reading of a different kanji
+3. Kanji MUST come first inside <ruby>, then <rt>reading</rt> — never reversed
+4. Do NOT add furigana to hiragana or katakana — kanji only
+Wrap each word in a span like this:
+  <span class="word-clickable" data-word="dictionary form" data-reading="hiragana reading">SURFACE TEXT WITH RUBY TAGS</span>
+  The span's visible content must be ONLY the ruby-annotated Japanese — never kanji followed by loose hiragana.
+
+Original text:
+${currentTextRaw}
+
+Output ONLY the rewritten Japanese text.`;
+    try {
+      const text = await callClaude(prompt);
+      currentTextRaw = text;
+      renderText(panel, text);
+    } catch(e) {
+      panel.className = 'text-panel';
+      panel.innerHTML = '<span style="color:var(--red)">Error. Please try again.</span>';
+    }
+  }
+
+  async function newText() { currentLevel = 'B1'; await generateText(); }
+  function clearLookup() { document.getElementById('lookupPanel').className = 'lookup-panel'; }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    loadWordLog();
+    loadCustomTopics();
+  });
+</script>
+</body>
+</html>
