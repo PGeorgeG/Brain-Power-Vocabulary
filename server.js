@@ -131,11 +131,13 @@ app.post('/api/tts', requireAuth, async (req, res) => {
     });
     if (!response.ok) {
       const err = await response.json();
+      console.error('OpenAI TTS error:', JSON.stringify(err));
       return res.status(500).json({ error: err.error?.message || 'TTS failed' });
     }
     res.setHeader('Content-Type', 'audio/mpeg');
     response.body.pipe(res);
   } catch (err) {
+    console.error('TTS exception:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
