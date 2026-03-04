@@ -842,6 +842,7 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, speed })
       });
+      label.textContent = `Server replied: ${res.status} ${res.headers.get('content-type')}`;
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         label.textContent = 'TTS error: ' + (err.error || res.status);
@@ -849,7 +850,9 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
         return;
       }
       const arrayBuffer = await res.arrayBuffer();
+      label.textContent = `Audio bytes: ${arrayBuffer.byteLength} — decoding…`;
       const audioCtx = getAudioCtx();
+      label.textContent = `AudioCtx state: ${audioCtx.state}`;
       const decoded = await audioCtx.decodeAudioData(arrayBuffer);
       const source = audioCtx.createBufferSource();
       source.buffer = decoded;
