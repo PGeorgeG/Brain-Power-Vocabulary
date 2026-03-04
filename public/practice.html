@@ -481,12 +481,10 @@
     </div>
     <div class="gf-status" id="gfStatus"></div>
 
-    <button class="gf-mic-btn" id="gfMicBtn" onmousedown="startListening()" onmouseup="stopListening()" ontouchstart="startListening()" ontouchend="stopListening()">🎙️</button>
-    <div class="gf-waveform" id="gfWaveform"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-    <div class="gf-mic-label" id="gfMicLabel">Hold to speak — release to submit</div>
+    <div class="gf-mic-label" id="gfMicLabel"></div>
 
     <div class="gf-fallback">
-      <input type="text" id="gfInput" placeholder="or type it here…" onkeydown="if(event.key==='Enter') checkGapAnswer(document.getElementById('gfInput').value)" />
+      <input type="text" id="gfInput" placeholder="type it here in romaji…" onkeydown="if(event.key==='Enter') checkGapAnswer(document.getElementById('gfInput').value)" />
       <button onclick="checkGapAnswer(document.getElementById('gfInput').value)">Check</button>
     </div>
 
