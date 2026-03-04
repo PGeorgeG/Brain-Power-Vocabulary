@@ -1,6 +1,7 @@
 // 読む・学ぶ — Railway server
 // Environment variables to set in Railway:
 //   ANTHROPIC_API_KEY  — your Anthropic API key
+//   OPENAI_API_KEY     — your OpenAI API key (for TTS)
 //   APP_PASSWORD       — the password users must enter to access the app
 //   SESSION_SECRET     — any long random string for signing session cookies
 
@@ -9,6 +10,7 @@ const session = require('express-session');
 const path    = require('path');
 
 const API_KEY        = process.env.ANTHROPIC_API_KEY || '';
+const OPENAI_KEY     = process.env.OPENAI_API_KEY || '';
 const APP_PASSWORD   = process.env.APP_PASSWORD || 'yomu2024';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'change-me-in-production';
 const PORT           = process.env.PORT || 3000;
@@ -104,6 +106,35 @@ app.post('/api/chat', requireAuth, async (req, res) => {
     });
     const data = await response.json();
     res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── TTS proxy (OpenAI) ───────────────────────────────────────────────────────
+app.post('/api/tts', requireAuth, async (req, res) => {
+  if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not set on server.' });
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'tts-1',
+        voice: 'nova',
+        input: req.body.text,
+        speed: 0.85
+      })
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      return res.status(500).json({ error: err.error?.message || 'TTS failed' });
+    }
+    res.setHeader('Content-Type', 'audio/mpeg');
+    response.body.pipe(res);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
