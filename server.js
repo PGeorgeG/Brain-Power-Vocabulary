@@ -125,7 +125,7 @@ app.post('/api/tts', requireAuth, async (req, res) => {
       body: JSON.stringify({
         model: 'tts-1',
         voice: 'nova',
-        input: req.body.text,
+        input: req.body.text.replace('＿＿＿', 'なになに'),
         speed: req.body.speed || 1.0
       })
     });
