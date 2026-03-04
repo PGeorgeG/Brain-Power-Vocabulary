@@ -126,7 +126,7 @@ app.post('/api/tts', requireAuth, async (req, res) => {
         model: 'tts-1',
         voice: 'nova',
         input: req.body.text,
-        speed: 0.85
+        speed: req.body.speed || 1.0
       })
     });
     if (!response.ok) {

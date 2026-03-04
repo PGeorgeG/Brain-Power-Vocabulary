@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>練習 — Practice</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Noto+Sans+JP:wght@300;400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap');
+
+  :root {
+    --ink: #1a1410;
+    --paper: #f5f0e8;
+    --paper-dark: #ede8d8;
+    --red: #9b2335;
+    --gold: #c4922a;
+    --muted: #8a7f6e;
+    --border: #d4ccb8;
+    --touch: 48px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Serif JP', serif;
+    min-height: 100vh;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 31px, var(--border) 31px, var(--border) 32px);
+    background-size: 100% 32px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .page-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; display: grid; grid-template-columns: 1fr 280px; gap: 24px; align-items: start; }
+  .main-col { min-width: 0; }
+  .side-panel {
+    background: white;
+    border: 1px solid var(--border);
+    box-shadow: 2px 2px 0 var(--border);
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+  }
+  .side-panel-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .side-panel-title {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .side-panel-count {
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.85rem;
+    color: var(--gold);
+  }
+  .side-words {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .side-word-entry {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    background: var(--paper);
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+  .side-word-entry ruby { ruby-position: over; }
+  .side-word-entry ruby rt { font-size: 0.5em; color: var(--red); font-family: 'Noto Sans JP', sans-serif; opacity: 0; transition: opacity 0.2s; }
+  .side-word-entry:hover ruby rt { opacity: 1; }
+  .side-word-meaning { display: block; font-size: 0.7em; color: var(--muted); font-family: 'Crimson Pro', serif; font-style: italic; margin-top: 1px; }
+  .side-empty { padding: 16px; font-family: 'Crimson Pro', serif; font-style: italic; color: var(--muted); font-size: 0.85rem; text-align: center; }
+  .side-word-entry.current { border-color: var(--gold); background: white; }
+
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--ink);
+    position: relative;
+  }
+  header::after {
+    content: '';
+    display: block;
+    width: 60%;
+    height: 1px;
+    background: var(--muted);
+    margin: 5px auto 0;
+  }
+  .title-jp { font-size: 1.8rem; font-weight: 300; letter-spacing: 0.3em; }
+  .title-en { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 0.95rem; color: var(--muted); margin-top: 3px; }
+  .back-link {
+    position: absolute; top: 4px; left: 0;
+    font-family: 'Crimson Pro', serif; font-style: italic;
+    font-size: 0.85rem; color: var(--muted); text-decoration: none;
+  }
+  .back-link:hover { color: var(--ink); }
+
+  /* Word count banner */
+  .word-banner {
+    background: white;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gold);
+    padding: 14px 18px;
+    margin-bottom: 28px;
+    box-shadow: 2px 2px 0 var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .word-banner .count { font-size: 1.6rem; font-weight: 300; color: var(--gold); letter-spacing: 0.05em; }
+  .word-banner .label { font-family: 'Crimson Pro', serif; font-style: italic; color: var(--muted); font-size: 0.95rem; }
+  .word-banner .empty { font-family: 'Crimson Pro', serif; font-style: italic; color: var(--muted); font-size: 0.95rem; }
+
+  /* Section heading */
+  .section-heading {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  /* Mode cards */
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+
+  .mode-card {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 24px 20px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    box-shadow: 2px 2px 0 var(--border);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .mode-card:hover {
+    border-color: var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    transform: translate(-1px, -1px);
+  }
+  .mode-card.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .mode-card .mode-icon { font-size: 1.6rem; margin-bottom: 4px; }
+  .mode-card .mode-title {
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+  .mode-card .mode-title-jp {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 300;
+  }
+  .mode-card .mode-desc {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-top: 2px;
+  }
+  .mode-card .mode-stevick {
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.75rem;
+    color: var(--gold);
+    margin-top: 4px;
+    letter-spacing: 0.03em;
+  }
+  .mode-card .coming-soon {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 0.72rem;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 2px 7px;
+  }
+
+
+  /* Furigana on mode card Japanese titles */
+  .mode-card ruby { ruby-position: over; }
+  .mode-card ruby rt { font-size: 0.55em; color: var(--red); font-family: 'Noto Sans JP', sans-serif; opacity: 0; transition: opacity 0.2s; }
+  .mode-card:hover ruby rt { opacity: 1; }
+    .mode-grid { grid-template-columns: 1fr; }
+    .title-jp { font-size: 1.5rem; }
+  }
+
+  /* ── Flashcard mode ─────────────────────────────────────────────────────── */
+  .flashcard-view { display: none !important; }
+  .flashcard-view.active { display: block !important; }
+  .mode-select-view.hidden { display: none; }
+
+  .fc-back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Crimson Pro', serif; font-style: italic;
+    font-size: 0.85rem; color: var(--muted); background: none;
+    border: none; cursor: pointer; padding: 0; margin-bottom: 20px;
+  }
+  .fc-back-btn:hover { color: var(--ink); }
+
+  .fc-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .fc-progress-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; }
+  .fc-progress-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.3s ease; }
+  .fc-progress-label { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+
+  .fc-card {
+    background: white; border: 1px solid var(--border);
+    box-shadow: 3px 3px 0 var(--border); min-height: 220px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 36px 28px; text-align: center;
+    margin-bottom: 16px; transition: box-shadow 0.15s;
+  }
+  .fc-card.revealed { box-shadow: 3px 3px 0 var(--ink); border-color: var(--ink); }
+
+  .fc-word { font-size: 2.4rem; font-weight: 300; letter-spacing: 0.05em; margin-bottom: 6px; line-height: 2.8; }
+  .fc-word ruby { ruby-position: over; }
+  .fc-word ruby rt { font-size: 0.38em; color: var(--red); font-family: 'Noto Sans JP', sans-serif; opacity: 0; transition: opacity 0.2s; }
+  .fc-card:hover .fc-word ruby rt { opacity: 1; }
+
+  .fc-reading { font-family: 'Noto Sans JP', sans-serif; font-size: 0.95rem; color: var(--red); margin-bottom: 20px; }
+
+  .fc-reveal-btn {
+    padding: 10px 28px; background: none; border: 1px solid var(--border);
+    cursor: pointer; font-family: 'Crimson Pro', serif; font-size: 0.95rem;
+    color: var(--muted); transition: all 0.15s;
+  }
+  .fc-reveal-btn:hover { border-color: var(--ink); color: var(--ink); }
+
+  .fc-meaning { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); width: 100%; }
+  .fc-meaning.visible { display: block; }
+  .fc-meaning-text { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 1.2rem; color: var(--ink); margin-bottom: 6px; }
+  .fc-guess-label { font-size: 0.8rem; color: var(--muted); font-family: 'Crimson Pro', serif; font-style: italic; margin-top: 4px; }
+
+  .fc-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .fc-btn {
+    padding: 12px 8px; border: 1px solid var(--border); background: var(--paper);
+    cursor: pointer; font-family: 'Crimson Pro', serif; font-size: 0.9rem;
+    transition: all 0.15s; text-align: center; line-height: 1.3;
+  }
+  .fc-btn:hover { border-color: var(--ink); }
+  .fc-btn.wrong:hover  { background: var(--red);    color: white; border-color: var(--red); }
+  .fc-btn.almost:hover { background: var(--gold);   color: white; border-color: var(--gold); }
+  .fc-btn.correct:hover{ background: #4a7c59;        color: white; border-color: #4a7c59; }
+  .fc-btn .btn-emoji { display: block; font-size: 1.2rem; margin-bottom: 2px; }
+  .fc-btn .btn-label { display: block; font-size: 0.8rem; color: var(--muted); }
+
+  .fc-done { text-align: center; padding: 40px 20px; background: white; border: 1px solid var(--border); box-shadow: 3px 3px 0 var(--border); display: none; }
+  .fc-done.visible { display: block; }
+  .fc-done h2 { font-size: 1.4rem; font-weight: 300; margin-bottom: 8px; letter-spacing: 0.05em; }
+  .fc-done p { font-family: 'Crimson Pro', serif; font-style: italic; color: var(--muted); font-size: 0.95rem; margin-bottom: 20px; }
+  .fc-stats { display: flex; justify-content: center; gap: 24px; margin-bottom: 24px; }
+  .fc-stat { text-align: center; }
+  .fc-stat .n { font-size: 1.6rem; font-weight: 300; }
+  .fc-stat .n.green { color: #4a7c59; }
+  .fc-stat .n.gold  { color: var(--gold); }
+  .fc-stat .n.red   { color: var(--red); }
+  .fc-stat .lbl { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 0.8rem; color: var(--muted); }
+  .side-word-entry.current { border-color: var(--gold); background: white; }
+
+
+  /* ── Gap fill mode ──────────────────────────────────────────────────────── */
+  .gapfill-view { display: none; }
+  .gapfill-view.active { display: block; }
+
+  .gf-sentence {
+    background: white; border: 1px solid var(--border);
+    box-shadow: 3px 3px 0 var(--border);
+    padding: 36px 28px; margin-bottom: 16px;
+    font-size: 1.5rem; line-height: 3.2;
+    font-family: 'Noto Serif JP', serif; text-align: center;
+  }
+  .gf-blank { display: inline-block; border-bottom: 2px solid var(--ink); min-width: 80px; margin: 0 4px; vertical-align: bottom; }
+
+  .gf-status {
+    text-align: center; margin-bottom: 16px; min-height: 28px;
+    font-family: 'Crimson Pro', serif; font-style: italic; font-size: 1rem;
+  }
+  .gf-status.correct { color: #4a7c59; }
+  .gf-status.wrong   { color: var(--red); }
+  .gf-status.loading { color: var(--muted); }
+
+  .gf-mic-btn {
+    display: block; margin: 0 auto 12px;
+    width: 72px; height: 72px; border-radius: 50%;
+    border: 2px solid var(--border); background: white;
+    font-size: 1.8rem; cursor: pointer; transition: all 0.15s;
+    box-shadow: 2px 2px 0 var(--border);
+  }
+  .gf-mic-btn:hover { border-color: var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+  .gf-mic-btn.listening { border-color: var(--red); background: #fdf0f0; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(155,35,53,0.3); } 50% { box-shadow: 0 0 0 8px rgba(155,35,53,0); } }
+
+  .gf-mic-label { text-align: center; font-family: 'Crimson Pro', serif; font-style: italic; font-size: 0.85rem; color: var(--muted); margin-bottom: 16px; }
+
+  .gf-fallback { display: flex; gap: 8px; margin-bottom: 12px; }
+  .gf-fallback input {
+    flex: 1; padding: 10px 12px; border: 1px solid var(--border);
+    background: var(--paper); font-family: 'Noto Serif JP', serif;
+    font-size: 1rem; color: var(--ink); outline: none;
+  }
+  .gf-fallback input:focus { border-color: var(--ink); }
+  .gf-fallback button {
+    padding: 10px 18px; background: var(--ink); color: var(--paper);
+    border: none; cursor: pointer; font-family: 'Crimson Pro', serif; font-size: 0.95rem;
+  }
+
+</style>
+</head>
+<body>
+<div class="page-wrap">
+<div class="main-col">
+
+  <header>
+    <a href="javascript:history.back()" class="back-link">← Read</a>
+    <div class="title-jp">練習</div>
+    <div class="title-en">Practice — Active Recall</div>
+  </header>
+
+  <div class="mode-select-view">
+  <div class="word-banner" id="wordBanner">
+    <span class="count" id="wordCount">0</span>
+    <span class="label" id="wordLabel">words in your log</span>
+  </div>
+
+  <div class="section-heading">Choose a practice mode</div>
+
+  <div class="mode-grid">
+
+    <button class="mode-card" id="flashcardBtn" onclick="startFlashcards()">
+      <div class="mode-icon">🃏</div>
+      <div class="mode-title">Flashcard</div>
+      <div class="mode-title-jp"><ruby>単語<rt>たんご</rt></ruby>カード</div>
+      <div class="mode-desc">See the word, recall the meaning. Fast and focused.</div>
+      <div class="mode-stevick">organized · recognition</div>
+    </button>
+
+    <button class="mode-card" id="gapFillBtn" onclick="startGapFill()">
+      <div class="mode-icon">✏️</div>
+      <div class="mode-title">Gap Fill</div>
+      <div class="mode-title-jp"><ruby>穴埋<rt>あなう</rt></ruby>め</div>
+      <div class="mode-desc">A sentence with the word blanked — say the missing word aloud.</div>
+      <div class="mode-stevick">organized · emotionally engaging</div>
+    </button>
+
+    <button class="mode-card" id="situationBtn" onclick="alert('Coming soon — Situation prompt mode')">
+      <div class="mode-icon">🎭</div>
+      <div class="mode-title">Situation Prompt</div>
+      <div class="mode-title-jp"><ruby>場面<rt>ばめん</rt></ruby><ruby>練習<rt>れんしゅう</rt></ruby></div>
+      <div class="mode-desc">Claude describes a scene from your life. Use the word naturally.</div>
+      <div class="mode-stevick">personally relevant · emotionally engaging</div>
+      <span class="coming-soon">coming soon</span>
+    </button>
+
+    <button class="mode-card" id="wordWebBtn" onclick="alert('Coming soon — Word web mode')">
+      <div class="mode-icon">🕸️</div>
+      <div class="mode-title">Word Web</div>
+      <div class="mode-title-jp"><ruby>語彙<rt>ごい</rt></ruby>ネット</div>
+      <div class="mode-desc">See how this week's words connect — roots, opposites, collocations.</div>
+      <div class="mode-stevick">organized · memorable</div>
+      <span class="coming-soon">coming soon</span>
+    </button>
+
+    <button class="mode-card" id="productionBtn" onclick="alert('Coming soon — Production mode')">
+      <div class="mode-icon">🎙️</div>
+      <div class="mode-title">Say It</div>
+      <div class="mode-title-jp"><ruby>発話<rt>はつわ</rt></ruby><ruby>練習<rt>れんしゅう</rt></ruby></div>
+      <div class="mode-desc">Speak a sentence using the word. Claude transcribes it, then offers one gentle improvement.</div>
+      <div class="mode-stevick">personally relevant · emotionally engaging · production</div>
+      <span class="coming-soon">coming soon</span>
+    </button>
+
+  </div>
+
+
+
+  </div><!-- end mode-select-view -->
+
+
+  <!-- ── Flashcard view ─────────────────────────────────────────────────── -->
+  <div class="flashcard-view" id="flashcardView" style="display:none">
+    <button class="fc-back-btn" onclick="exitFlashcards()">← back to modes</button>
+
+    <div class="fc-progress">
+      <div class="fc-progress-track"><div class="fc-progress-fill" id="fcFill" style="width:0%"></div></div>
+      <div class="fc-progress-label" id="fcProgressLabel"></div>
+    </div>
+
+    <div class="fc-card" id="fcCard">
+      <div class="fc-word" id="fcWord"></div>
+      <div class="fc-reading" id="fcReading"></div>
+      <button class="fc-reveal-btn" id="fcRevealBtn" onclick="revealMeaning()">Reveal meaning</button>
+      <div class="fc-meaning" id="fcMeaning">
+        <div class="fc-meaning-text" id="fcMeaningText"></div>
+        <div class="fc-guess-label">How well did you know it?</div>
+      </div>
+    </div>
+
+    <div class="fc-buttons" id="fcButtons" style="display:none">
+      <button class="fc-btn wrong"   onclick="rateCard(0)"><span class="btn-emoji">✗</span><span class="btn-label">Didn't know</span></button>
+      <button class="fc-btn almost"  onclick="rateCard(1)"><span class="btn-emoji">～</span><span class="btn-label">Almost</span></button>
+      <button class="fc-btn correct" onclick="rateCard(2)"><span class="btn-emoji">✓</span><span class="btn-label">Got it</span></button>
+    </div>
+
+    <div class="fc-done" id="fcDone">
+      <h2>よくできました 🌸</h2>
+      <p>Session complete.</p>
+      <div class="fc-stats">
+        <div class="fc-stat"><div class="n green" id="fcGot">0</div><div class="lbl">got it</div></div>
+        <div class="fc-stat"><div class="n gold"  id="fcAlmost">0</div><div class="lbl">almost</div></div>
+        <div class="fc-stat"><div class="n red"   id="fcMissed">0</div><div class="lbl">missed</div></div>
+      </div>
+      <button class="fc-reveal-btn" onclick="restartFlashcards()">Go again</button>
+      &nbsp;
+      <button class="fc-reveal-btn" onclick="exitFlashcards()">Back to modes</button>
+    </div>
+  </div>
+
+  <!-- ── Gap fill view ──────────────────────────────────────────────────── -->
+  <div class="gapfill-view" id="gapfillView">
+    <button class="fc-back-btn" onclick="exitGapFill()">← back to modes</button>
+
+    <div class="fc-progress">
+      <div class="fc-progress-track"><div class="fc-progress-fill" id="gfFill" style="width:0%"></div></div>
+      <div class="fc-progress-label" id="gfProgressLabel"></div>
+    </div>
+
+
+    <div class="gf-sentence" id="gfSentence">…</div>
+    <div style="text-align:center; margin-bottom:12px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+      <button onclick="readSentence(1.0)" style="background:none;border:1px solid var(--border);cursor:pointer;color:var(--muted);font-family:'Crimson Pro',serif;font-style:italic;font-size:0.82rem;padding:4px 12px;" title="Natural speed">🔊 natural</button>
+      <button onclick="readSentence(0.75)" style="background:none;border:1px solid var(--border);cursor:pointer;color:var(--muted);font-family:'Crimson Pro',serif;font-style:italic;font-size:0.82rem;padding:4px 12px;" title="Slow">🔊 slow</button>
+      <button onclick="readSentence(0.5)" style="background:none;border:1px solid var(--border);cursor:pointer;color:var(--muted);font-family:'Crimson Pro',serif;font-style:italic;font-size:0.82rem;padding:4px 12px;" title="Slowest">🔊 slowest</button>
+      <button onclick="loadGapCard()" style="background:none;border:1px solid var(--border);cursor:pointer;color:var(--muted);font-family:'Crimson Pro',serif;font-style:italic;font-size:0.82rem;padding:4px 12px;" title="New sentence">↻ new sentence</button>
+    </div>
+    <div class="gf-status" id="gfStatus"></div>
+
+    <button class="gf-mic-btn" id="gfMicBtn" onclick="startListening()">🎙️</button>
+    <div class="gf-mic-label" id="gfMicLabel">Tap to say the missing word</div>
+
+    <div class="gf-fallback">
+      <input type="text" id="gfInput" placeholder="or type it here…" onkeydown="if(event.key==='Enter') checkGapAnswer(document.getElementById('gfInput').value)" />
+      <button onclick="checkGapAnswer(document.getElementById('gfInput').value)">Check</button>
+    </div>
+
+    <div class="fc-buttons" id="gfButtons" style="display:none">
+      <button class="fc-btn wrong"   onclick="rateGap(0)"><span class="btn-emoji">✗</span><span class="btn-label">Didn't know</span></button>
+      <button class="fc-btn almost"  onclick="rateGap(1)"><span class="btn-emoji">～</span><span class="btn-label">Almost</span></button>
+      <button class="fc-btn correct" onclick="rateGap(2)"><span class="btn-emoji">✓</span><span class="btn-label">Got it</span></button>
+    </div>
+
+    <div class="fc-done" id="gfDone">
+      <h2>よくできました 🌸</h2>
+      <p>Session complete.</p>
+      <div class="fc-stats">
+        <div class="fc-stat"><div class="n green" id="gfGot">0</div><div class="lbl">got it</div></div>
+        <div class="fc-stat"><div class="n gold"  id="gfAlmost">0</div><div class="lbl">almost</div></div>
+        <div class="fc-stat"><div class="n red"   id="gfMissed">0</div><div class="lbl">missed</div></div>
+      </div>
+      <button class="fc-reveal-btn" onclick="restartGapFill()">Go again</button>
+      &nbsp;
+      <button class="fc-reveal-btn" onclick="exitGapFill()">Back to modes</button>
+    </div>
+  </div>
+
+</div><!-- end main-col -->
+
+<div class="side-panel">
+  <div class="side-panel-header">
+    <span class="side-panel-title">Word log</span>
+    <span class="side-panel-count" id="sideCount"></span>
+  </div>
+  <div class="side-words" id="sideWords">
+    <div class="side-empty">No words yet — read a passage and look some up.</div>
+  </div>
+</div>
+
+</div><!-- end page-wrap -->
+<script>
+  const STORAGE_KEY = 'yomu_manabi_wordlog';
+  let allWords = [];
+  let fcQueue = [];
+  let fcIndex = 0;
+  let fcScores = { got: 0, almost: 0, missed: 0 };
+
+  // ── Load & render sidebar ────────────────────────────────────────────────
+  function loadWords() {
+    try { allWords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { allWords = []; }
+    const count = allWords.length;
+    document.getElementById('wordCount').textContent = count;
+    document.getElementById('wordLabel').textContent = count === 1 ? 'word in your log' : 'words in your log';
+    if (count === 0) {
+      ['flashcardBtn','gapFillBtn','situationBtn','wordWebBtn','productionBtn'].forEach(id =>
+        document.getElementById(id).classList.add('disabled'));
+      document.getElementById('sideWords').innerHTML = '<div class="side-empty">No words yet — read a passage and look some up.</div>';
+      return;
+    }
+    document.getElementById('sideCount').textContent = count;
+    renderSidebar();
+  }
+
+  function renderSidebar(highlightWord) {
+    const sideWords = document.getElementById('sideWords');
+    sideWords.innerHTML = allWords.map(w => `
+      <div class="side-word-entry${highlightWord === w.word ? ' current' : ''}">
+        ${w.reading ? `<ruby>${w.word}<rt>${w.reading}</rt></ruby>` : w.word}
+        ${w.meaning ? `<span class="side-word-meaning">${w.meaning}</span>` : ''}
+      </div>`).join('');
+  }
+
+  // ── Flashcard logic ──────────────────────────────────────────────────────
+  function startFlashcards() {
+    if (!allWords.length) return;
+    fcQueue = [...allWords].sort(() => Math.random() - 0.5);
+    fcIndex = 0;
+    fcScores = { got: 0, almost: 0, missed: 0 };
+    document.querySelector('.mode-select-view').classList.add('hidden');
+    document.getElementById('flashcardView').style.display = 'block';
+    document.getElementById('wordBanner').style.display = 'none';
+    document.getElementById('fcDone').classList.remove('visible');
+    document.getElementById('fcCard').style.display = '';
+    document.getElementById('fcCard').className = 'fc-card';
+    document.getElementById('fcButtons').style.display = 'none';
+    document.getElementById('fcMeaning').className = 'fc-meaning';
+    document.getElementById('fcRevealBtn').style.display = '';
+    showCard();
+  }
+
+  function showCard() {
+    if (fcIndex >= fcQueue.length) { showDone(); return; }
+    const w = fcQueue[fcIndex];
+
+    // Update progress
+    const pct = (fcIndex / fcQueue.length) * 100;
+    document.getElementById('fcFill').style.width = pct + '%';
+    document.getElementById('fcProgressLabel').textContent = `${fcIndex + 1} / ${fcQueue.length}`;
+
+    // Word with ruby
+    const wordEl = document.getElementById('fcWord');
+    wordEl.innerHTML = w.reading ? `<ruby>${w.word}<rt>${w.reading}</rt></ruby>` : w.word;
+
+    const cleanReading = (w.reading || '').replace(/[（()）]/g, '');
+    document.getElementById('fcReading').textContent = cleanReading ? `（${cleanReading}）` : '';
+    document.getElementById('fcMeaningText').textContent = w.meaning || '—';
+    document.getElementById('fcMeaning').className = 'fc-meaning';
+    document.getElementById('fcRevealBtn').style.display = '';
+    document.getElementById('fcButtons').style.display = 'none';
+    document.getElementById('fcCard').className = 'fc-card';
+
+    renderSidebar(w.word);
+  }
+
+  function revealMeaning() {
+    document.getElementById('fcMeaning').classList.add('visible');
+    document.getElementById('fcRevealBtn').style.display = 'none';
+    document.getElementById('fcButtons').style.display = 'grid';
+    document.getElementById('fcCard').classList.add('revealed');
+  }
+
+  function rateCard(score) {
+    if (score === 2) fcScores.got++;
+    else if (score === 1) fcScores.almost++;
+    else fcScores.missed++;
+    fcIndex++;
+    showCard();
+  }
+
+  function showDone() {
+    document.getElementById('fcCard').style.display = 'none';
+    document.getElementById('fcButtons').style.display = 'none';
+    document.getElementById('fcProgressLabel').textContent = `${fcQueue.length} / ${fcQueue.length}`;
+    document.getElementById('fcFill').style.width = '100%';
+    document.getElementById('fcGot').textContent = fcScores.got;
+    document.getElementById('fcAlmost').textContent = fcScores.almost;
+    document.getElementById('fcMissed').textContent = fcScores.missed;
+    document.getElementById('fcDone').classList.add('visible');
+    renderSidebar();
+  }
+
+  function restartFlashcards() {
+    document.getElementById('fcDone').classList.remove('visible');
+    document.getElementById('fcCard').style.display = '';
+    startFlashcards();
+  }
+
+  function exitFlashcards() {
+    document.getElementById('flashcardView').style.display = 'none';
+    document.querySelector('.mode-select-view').classList.remove('hidden');
+    document.getElementById('wordBanner').style.display = '';
+    renderSidebar();
+  }
+
+
+  // ── Gap fill ────────────────────────────────────────────────────────────
+  let gfQueue = [], gfIndex = 0, gfScores = { got:0, almost:0, missed:0 };
+  let gfCurrentWord = '', gfRecognition = null;
+
+  function startGapFill() {
+    if (!allWords.length) return;
+    gfQueue = [...allWords].sort(() => Math.random() - 0.5);
+    gfIndex = 0;
+    gfScores = { got:0, almost:0, missed:0 };
+    document.querySelector('.mode-select-view').classList.add('hidden');
+    document.getElementById('gapfillView').style.display = 'block';
+    document.getElementById('wordBanner').style.display = 'none';
+    document.getElementById('gfDone').classList.remove('visible');
+    document.getElementById('gfButtons').style.display = 'none';
+    loadGapCard();
+  }
+
+  async function loadGapCard() {
+    if (gfIndex >= gfQueue.length) { showGfDone(); return; }
+    const w = gfQueue[gfIndex];
+    gfCurrentWord = w.word;
+
+    // Progress
+    const pct = (gfIndex / gfQueue.length) * 100;
+    document.getElementById('gfFill').style.width = pct + '%';
+    document.getElementById('gfProgressLabel').textContent = `${gfIndex + 1} / ${gfQueue.length}`;
+
+    // Reset UI
+    document.getElementById('gfStatus').textContent = '';
+    document.getElementById('gfStatus').className = 'gf-status loading';
+    document.getElementById('gfButtons').style.display = 'none';
+    document.getElementById('gfInput').value = '';
+    document.getElementById('gfMicBtn').className = 'gf-mic-btn';
+    document.getElementById('gfMicLabel').textContent = 'Tap to say the missing word';
+    document.getElementById('gfSentence').textContent = '…generating…';
+
+    renderSidebar(w.word);
+
+    // Generate sentence with blank
+    try {
+      const prompt = `Write one natural Japanese sentence using the word「${w.word}」(${w.reading}, meaning: ${w.meaning}).
+
+Replace the word「${w.word}」in the sentence with ＿＿＿ (do not include the word or its reading).
+Output ONLY the sentence with the blank. No explanation.`;
+
+      const sentence = await callClaude(prompt);
+      const el = document.getElementById('gfSentence');
+      el.innerHTML = sentence.trim();
+      // Fix any ruby issues
+      el.querySelectorAll('ruby').forEach(r => { const rt = r.querySelector('rt'); if(rt) r.appendChild(rt); });
+      document.getElementById('gfStatus').textContent = '';
+      document.getElementById('gfStatus').className = 'gf-status';
+    } catch(e) {
+      document.getElementById('gfSentence').textContent = 'Error generating sentence. Try again.';
+    }
+  }
+
+  async function checkGapAnswer(answer) {
+    if (!answer.trim()) return;
+    document.getElementById('gfStatus').className = 'gf-status loading';
+    document.getElementById('gfStatus').textContent = '…checking…';
+
+    try {
+      const result = await callClaude(`The target Japanese word is「${gfCurrentWord}」.
+The learner answered:「${answer.trim()}」
+Is this correct or close? Accept conjugated forms, minor kana differences, and reasonable attempts.
+Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one short sentence in English"}`);
+
+      const data = JSON.parse(result.replace(/```json|```/g, '').trim());
+      const status = document.getElementById('gfStatus');
+      if (data.correct) {
+        status.className = 'gf-status correct';
+        status.textContent = '✓ ' + (data.note || 'Correct!');
+      } else if (data.close) {
+        status.className = 'gf-status wrong';
+        status.textContent = '～ ' + (data.note || `Close — the word was ${gfCurrentWord}`);
+      } else {
+        status.className = 'gf-status wrong';
+        status.textContent = '✗ ' + (data.note || `The word was ${gfCurrentWord}`);
+      }
+      document.getElementById('gfButtons').style.display = 'grid';
+    } catch(e) {
+      document.getElementById('gfStatus').textContent = 'Error checking answer.';
+    }
+  }
+
+  function startListening() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      document.getElementById('gfMicLabel').textContent = 'Speech not supported — please type below';
+      return;
+    }
+    gfRecognition = new SpeechRecognition();
+    gfRecognition.lang = 'ja-JP';
+    gfRecognition.interimResults = false;
+    gfRecognition.maxAlternatives = 1;
+
+    const btn = document.getElementById('gfMicBtn');
+    const label = document.getElementById('gfMicLabel');
+    btn.className = 'gf-mic-btn listening';
+    label.textContent = 'Listening…';
+
+    gfRecognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      btn.className = 'gf-mic-btn';
+      label.textContent = `Heard: 「${transcript}」`;
+      checkGapAnswer(transcript);
+    };
+    gfRecognition.onerror = (e) => {
+      btn.className = 'gf-mic-btn';
+      label.textContent = `Error: ${e.error} — try typing below`;
+    };
+    gfRecognition.onend = () => { btn.className = 'gf-mic-btn'; };
+    gfRecognition.start();
+  }
+
+  function rateGap(score) {
+    if (score === 2) gfScores.got++;
+    else if (score === 1) gfScores.almost++;
+    else gfScores.missed++;
+    gfIndex++;
+    loadGapCard();
+  }
+
+  function showGfDone() {
+    document.getElementById('gfSentence').style.display = 'none';
+    document.getElementById('gfButtons').style.display = 'none';
+    document.getElementById('gfMicBtn').style.display = 'none';
+    document.getElementById('gfMicLabel').style.display = 'none';
+    document.querySelector('.gf-fallback').style.display = 'none';
+    document.getElementById('gfStatus').textContent = '';
+    document.getElementById('gfFill').style.width = '100%';
+    document.getElementById('gfProgressLabel').textContent = `${gfQueue.length} / ${gfQueue.length}`;
+    document.getElementById('gfGot').textContent = gfScores.got;
+    document.getElementById('gfAlmost').textContent = gfScores.almost;
+    document.getElementById('gfMissed').textContent = gfScores.missed;
+    document.getElementById('gfDone').classList.add('visible');
+    renderSidebar();
+  }
+
+  function restartGapFill() {
+    document.getElementById('gfDone').classList.remove('visible');
+    document.getElementById('gfSentence').style.display = '';
+    document.getElementById('gfMicBtn').style.display = '';
+    document.getElementById('gfMicLabel').style.display = '';
+    document.querySelector('.gf-fallback').style.display = '';
+    startGapFill();
+  }
+
+  function exitGapFill() {
+    document.getElementById('gapfillView').style.display = 'none';
+    document.querySelector('.mode-select-view').classList.remove('hidden');
+    document.getElementById('wordBanner').style.display = '';
+    document.getElementById('gfSentence').style.display = '';
+    document.getElementById('gfMicBtn').style.display = '';
+    document.getElementById('gfMicLabel').style.display = '';
+    document.querySelector('.gf-fallback').style.display = '';
+    document.getElementById('gfDone').classList.remove('visible');
+    renderSidebar();
+  }
+
+  async function readSentence(speed = 1.0) {
+    const el = document.getElementById('gfSentence');
+    const label = document.getElementById('gfMicLabel');
+    const text = el.textContent.replace('＿＿＿', '').trim();
+    if (!text) return;
+    label.textContent = '…loading audio…';
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, speed })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        label.textContent = 'TTS error: ' + (err.error || res.status);
+        fallbackTTS(text);
+        return;
+      }
+      const blob = await res.blob();
+      const audio = new Audio(URL.createObjectURL(blob));
+      audio.play();
+      label.textContent = 'Tap to say the missing word';
+    } catch(e) {
+      label.textContent = 'TTS error: ' + e.message;
+      fallbackTTS(text);
+    }
+  }
+
+  function fallbackTTS(text) {
+    window.speechSynthesis.cancel();
+    const voices = window.speechSynthesis.getVoices();
+    const jpVoice = voices.find(v => v.lang === 'ja-JP');
+
+    const parts = text.split('＿＿＿');
+
+    function speak(str) {
+      const utt = new SpeechSynthesisUtterance(str);
+      utt.lang = 'ja-JP';
+      utt.rate = 0.6;
+      utt.pitch = 1.0;
+      if (jpVoice) utt.voice = jpVoice;
+      return utt;
+    }
+
+    if (parts.length === 1) {
+      window.speechSynthesis.speak(speak(parts[0]));
+    } else {
+      const first = speak(parts[0].trim());
+      first.onend = () => {
+        // Pause 1.2 seconds then speak second part
+        setTimeout(() => {
+          window.speechSynthesis.speak(speak(parts[1].trim()));
+        }, 1200);
+      };
+      window.speechSynthesis.speak(first);
+    }
+  }
+  async function callClaude(prompt) {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] })
+    });
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.content.map(c => c.text || '').join('');
+  }
+
+  window.addEventListener('DOMContentLoaded', loadWords);
+</script>
+</body>
+</html>
