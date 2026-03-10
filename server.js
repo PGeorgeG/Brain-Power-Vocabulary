@@ -114,6 +114,9 @@ app.post('/api/chat', requireAuth, async (req, res) => {
 // ── TTS proxy (OpenAI) ───────────────────────────────────────────────────────
 app.post('/api/tts', requireAuth, async (req, res) => {
   if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not set on server.' });
+  console.log('TTS received text:', JSON.stringify(req.body.text));
+  const ttsText = (req.body.text || '').replace('＿＿＿', 'なになに').replace('___', 'なになに');
+  console.log('TTS sending:', JSON.stringify(ttsText));
   try {
     const fetch = (await import('node-fetch')).default;
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
@@ -125,7 +128,7 @@ app.post('/api/tts', requireAuth, async (req, res) => {
       body: JSON.stringify({
         model: 'tts-1',
         voice: 'nova',
-        input: req.body.text.replace('＿＿＿', 'なになに'),
+        input: ttsText,
         speed: req.body.speed || 1.0
       })
     });

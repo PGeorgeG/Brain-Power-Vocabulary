@@ -377,8 +377,16 @@
       <div class="mode-icon">🃏</div>
       <div class="mode-title">Flashcard</div>
       <div class="mode-title-jp"><ruby>単語<rt>たんご</rt></ruby>カード</div>
-      <div class="mode-desc">See the word, recall the meaning. Fast and focused.</div>
+      <div class="mode-desc">See the word — recall the meaning.</div>
       <div class="mode-stevick">organized · recognition</div>
+    </button>
+
+    <button class="mode-card" id="recallBtn" onclick="startRecall()">
+      <div class="mode-icon">✍️</div>
+      <div class="mode-title">Recall</div>
+      <div class="mode-title-jp"><ruby>想起<rt>そうき</rt></ruby>練習</div>
+      <div class="mode-desc">See the meaning — type the word in romaji.</div>
+      <div class="mode-stevick">organized · production</div>
     </button>
 
     <button class="mode-card" id="gapFillBtn" onclick="startGapFill()">
@@ -507,6 +515,50 @@
     </div>
   </div>
 
+  <!-- ── Recall view (meaning → word) ──────────────────────────────────── -->
+  <div class="flashcard-view" id="recallView" style="display:none">
+    <button class="fc-back-btn" onclick="exitRecall()">← back to modes</button>
+
+    <div class="fc-progress">
+      <div class="fc-progress-track"><div class="fc-progress-fill" id="rcFill" style="width:0%"></div></div>
+      <div class="fc-progress-label" id="rcProgressLabel"></div>
+    </div>
+
+    <div class="fc-card" id="rcCard">
+      <div class="fc-meaning-text" id="rcMeaning" style="font-size:1.4rem; font-family:'Crimson Pro',serif; font-style:italic;"></div>
+      <div class="fc-guess-label" style="margin-top:12px;">What's the word?</div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-bottom:12px;" id="rcInputRow">
+      <input type="text" id="rcInput" placeholder="type in romaji…"
+        style="flex:1;padding:10px 12px;border:1px solid var(--border);background:var(--paper);font-family:'Noto Serif JP',serif;font-size:1rem;color:var(--ink);outline:none;"
+        onkeydown="if(event.key==='Enter') checkRecall()" />
+      <button onclick="checkRecall()"
+        style="padding:10px 18px;background:var(--ink);color:var(--paper);border:none;cursor:pointer;font-family:'Crimson Pro',serif;font-size:0.95rem;">Check</button>
+    </div>
+
+    <div class="gf-status" id="rcStatus"></div>
+
+    <div class="fc-buttons" id="rcButtons" style="display:none">
+      <button class="fc-btn wrong"   onclick="rateRecall(0)"><span class="btn-emoji">✗</span><span class="btn-label">Didn't know</span></button>
+      <button class="fc-btn almost"  onclick="rateRecall(1)"><span class="btn-emoji">～</span><span class="btn-label">Almost</span></button>
+      <button class="fc-btn correct" onclick="rateRecall(2)"><span class="btn-emoji">✓</span><span class="btn-label">Got it</span></button>
+    </div>
+
+    <div class="fc-done" id="rcDone">
+      <h2>よくできました 🌸</h2>
+      <p>Session complete.</p>
+      <div class="fc-stats">
+        <div class="fc-stat"><div class="n green" id="rcGot">0</div><div class="lbl">got it</div></div>
+        <div class="fc-stat"><div class="n gold"  id="rcAlmost">0</div><div class="lbl">almost</div></div>
+        <div class="fc-stat"><div class="n red"   id="rcMissed">0</div><div class="lbl">missed</div></div>
+      </div>
+      <button class="fc-reveal-btn" onclick="restartRecall()">Go again</button>
+      &nbsp;
+      <button class="fc-reveal-btn" onclick="exitRecall()">Back to modes</button>
+    </div>
+  </div>
+
 </div><!-- end main-col -->
 
 <div class="side-panel">
@@ -534,7 +586,7 @@
     document.getElementById('wordCount').textContent = count;
     document.getElementById('wordLabel').textContent = count === 1 ? 'word in your log' : 'words in your log';
     if (count === 0) {
-      ['flashcardBtn','gapFillBtn','situationBtn','wordWebBtn','productionBtn'].forEach(id =>
+      ['flashcardBtn','recallBtn','gapFillBtn','situationBtn','wordWebBtn','productionBtn'].forEach(id =>
         document.getElementById(id).classList.add('disabled'));
       document.getElementById('sideWords').innerHTML = '<div class="side-empty">No words yet — read a passage and look some up.</div>';
       return;
@@ -772,7 +824,7 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
   async function readSentence(speed = 1.0) {
     const el = document.getElementById('gfSentence');
     const label = document.getElementById('gfStatus');
-    const text = el.textContent.replace('＿＿＿', '').trim();
+    const text = el.textContent.replace('＿＿＿', 'なになに').trim();
     if (!text) return;
     label.textContent = '…loading audio…';
     try {
@@ -840,6 +892,113 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     return data.content.map(c => c.text || '').join('');
+  }
+
+
+  // ── Recall mode (meaning → word) ────────────────────────────────────────
+  let rcQueue = [], rcIndex = 0, rcScores = { got:0, almost:0, missed:0 };
+  let rcCurrentWord = '';
+
+  function startRecall() {
+    if (!allWords.length) return;
+    rcQueue = [...allWords].sort(() => Math.random() - 0.5);
+    rcIndex = 0;
+    rcScores = { got:0, almost:0, missed:0 };
+    document.querySelector('.mode-select-view').classList.add('hidden');
+    document.getElementById('recallView').style.display = 'block';
+    document.getElementById('wordBanner').style.display = 'none';
+    document.getElementById('rcDone').classList.remove('visible');
+    document.getElementById('rcButtons').style.display = 'none';
+    document.getElementById('rcInputRow').style.display = 'flex';
+    showRecallCard();
+  }
+
+  function showRecallCard() {
+    if (rcIndex >= rcQueue.length) { showRcDone(); return; }
+    const w = rcQueue[rcIndex];
+    rcCurrentWord = w.word;
+
+    const pct = (rcIndex / rcQueue.length) * 100;
+    document.getElementById('rcFill').style.width = pct + '%';
+    document.getElementById('rcProgressLabel').textContent = `${rcIndex + 1} / ${rcQueue.length}`;
+    document.getElementById('rcMeaning').textContent = w.meaning || '—';
+    document.getElementById('rcStatus').textContent = '';
+    document.getElementById('rcStatus').className = 'gf-status';
+    document.getElementById('rcButtons').style.display = 'none';
+    document.getElementById('rcInputRow').style.display = 'flex';
+    document.getElementById('rcInput').value = '';
+    document.getElementById('rcCard').className = 'fc-card';
+    setTimeout(() => document.getElementById('rcInput').focus(), 50);
+    renderSidebar();
+  }
+
+  async function checkRecall() {
+    const answer = document.getElementById('rcInput').value.trim();
+    if (!answer) return;
+    const status = document.getElementById('rcStatus');
+    status.className = 'gf-status loading';
+    status.textContent = '…checking…';
+    document.getElementById('rcInputRow').style.display = 'none';
+
+    try {
+      const result = await callClaude(`The target Japanese word is「${rcCurrentWord}」(reading: ${rcQueue[rcIndex].reading}).
+The learner typed this romaji answer: "${answer}"
+Is this correct? Accept romaji that matches the reading, with minor variations.
+Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one short English sentence showing the correct word and reading"}`);
+
+      const data = JSON.parse(result.replace(/\`\`\`json|\`\`\`/g, '').trim());
+      if (data.correct) {
+        status.className = 'gf-status correct';
+        status.textContent = '✓ ' + (data.note || 'Correct!');
+        document.getElementById('rcCard').classList.add('revealed');
+      } else if (data.close) {
+        status.className = 'gf-status wrong';
+        status.textContent = '～ ' + (data.note || `Close — the word was ${rcCurrentWord}`);
+      } else {
+        status.className = 'gf-status wrong';
+        status.textContent = '✗ ' + (data.note || `The word was ${rcCurrentWord} (${rcQueue[rcIndex].reading})`);
+      }
+      document.getElementById('rcButtons').style.display = 'grid';
+    } catch(e) {
+      status.textContent = 'Error checking answer.';
+      document.getElementById('rcInputRow').style.display = 'flex';
+    }
+  }
+
+  function rateRecall(score) {
+    if (score === 2) rcScores.got++;
+    else if (score === 1) rcScores.almost++;
+    else rcScores.missed++;
+    rcIndex++;
+    showRecallCard();
+  }
+
+  function showRcDone() {
+    document.getElementById('rcCard').style.display = 'none';
+    document.getElementById('rcInputRow').style.display = 'none';
+    document.getElementById('rcButtons').style.display = 'none';
+    document.getElementById('rcFill').style.width = '100%';
+    document.getElementById('rcProgressLabel').textContent = `${rcQueue.length} / ${rcQueue.length}`;
+    document.getElementById('rcGot').textContent = rcScores.got;
+    document.getElementById('rcAlmost').textContent = rcScores.almost;
+    document.getElementById('rcMissed').textContent = rcScores.missed;
+    document.getElementById('rcDone').classList.add('visible');
+    renderSidebar();
+  }
+
+  function restartRecall() {
+    document.getElementById('rcDone').classList.remove('visible');
+    document.getElementById('rcCard').style.display = '';
+    startRecall();
+  }
+
+  function exitRecall() {
+    document.getElementById('recallView').style.display = 'none';
+    document.querySelector('.mode-select-view').classList.remove('hidden');
+    document.getElementById('wordBanner').style.display = '';
+    document.getElementById('rcCard').style.display = '';
+    document.getElementById('rcDone').classList.remove('visible');
+    renderSidebar();
   }
 
   window.addEventListener('DOMContentLoaded', loadWords);
