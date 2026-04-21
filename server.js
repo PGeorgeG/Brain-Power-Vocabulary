@@ -101,7 +101,7 @@ app.post('/api/chat', requireAuth, async (req, res) => {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 1200,
-        messages: req.body.messages
+        messages: req.body.messages || [{ role: 'user', content: req.body.prompt }]
       })
     });
     const data = await response.json();
