@@ -541,17 +541,26 @@
     wordLog = []; saveWordLog(); renderWordLog();
   }
 
-  // ── Claude API (proxied through Railway server) ──────────────────────────
+  // ── Claude API (Claude.ai artifact sandbox) ─────────────────────────────
   async function callClaude(prompt) {
-    const res = await fetch('/api/chat', {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] })
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: prompt }]
+      })
     });
-    if (res.status === 401) { window.location.href = '/login'; return; }
-    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API ${res.status}`);
+    }
     const data = await res.json();
-    if (data.error) throw new Error(data.error);
     return data.content.map(c => c.text || '').join('');
   }
 
@@ -807,10 +816,10 @@ CRITICAL FURIGANA RULES — follow exactly:
     const prompt = `A Japanese learner guessed the meaning of「${word}」.
 Their guess: "${guess}"
 
-Respond in English (3–4 sentences max):
-- Correct/close: affirm warmly, give precise meaning, add usage insight
-- Partially right: acknowledge what's right, gently correct the rest
-- Off: be encouraging, explain meaning, show why context clues point to it
+Respond in English, 2–3 sentences max. Be factual and direct — no praise, no encouragement, no softening.
+- Correct: confirm it and give the precise meaning.
+- Close: state what was right and what was wrong, factually.
+- Wrong: state the actual meaning. If the context clues pointed clearly to it, briefly say how.
 
 If you include any Japanese words or phrases in your response, wrap each kanji with furigana using this exact format: <ruby>漢字<rt>かんじ</rt></ruby>
 The kanji base text MUST come first, then the rt tag — never reversed.
