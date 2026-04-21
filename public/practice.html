@@ -748,22 +748,19 @@ Output ONLY the sentence with the blank. No explanation.`;
     document.getElementById('gfStatus').textContent = '…checking…';
 
     try {
-      const result = await callClaude(`The target Japanese word is「${gfCurrentWord}」.
-The learner answered:「${answer.trim()}」
-Is this correct or close? Accept conjugated forms, minor kana differences, and reasonable attempts.
-Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one short sentence in English"}`);
+      const result = await callClaude(`The target Japanese word is「${gfCurrentWord}」. The learner answered: "${answer.trim()}". Accept conjugated forms and minor kana differences as correct. Reply with JSON only, no preamble. correct: true/false. close: true/false. note: if correct, just the word and reading; if close, one factual sentence on what specifically was wrong (wrong conjugation, wrong reading, etc.); if wrong, just state the correct word and reading. Never use encouragement, praise, or softening language.`);
 
-      const data = JSON.parse(result.replace(/```json|```/g, '').trim());
+      const data = JSON.parse(result.replace(/\`\`\`json|\`\`\`/g, '').trim());
       const status = document.getElementById('gfStatus');
       if (data.correct) {
         status.className = 'gf-status correct';
-        status.textContent = '✓ ' + (data.note || 'Correct!');
+        status.textContent = '✓ ' + (data.note || gfCurrentWord);
       } else if (data.close) {
         status.className = 'gf-status wrong';
-        status.textContent = '～ ' + (data.note || `Close — the word was ${gfCurrentWord}`);
+        status.textContent = '～ ' + (data.note || gfCurrentWord);
       } else {
         status.className = 'gf-status wrong';
-        status.textContent = '✗ ' + (data.note || `The word was ${gfCurrentWord}`);
+        status.textContent = '✗ ' + (data.note || gfCurrentWord);
       }
       document.getElementById('gfButtons').style.display = 'grid';
     } catch(e) {
@@ -941,22 +938,19 @@ Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one 
     document.getElementById('rcInputRow').style.display = 'none';
 
     try {
-      const result = await callClaude(`The target Japanese word is「${rcCurrentWord}」(reading: ${rcQueue[rcIndex].reading}).
-The learner typed this romaji answer: "${answer}"
-Is this correct? Accept romaji that matches the reading, with minor variations.
-Reply with JSON only: {"correct": true/false, "close": true/false, "note": "one short English sentence showing the correct word and reading"}`);
+      const result = await callClaude(`The target Japanese word is「${rcCurrentWord}」(reading: ${rcQueue[rcIndex].reading}). The learner typed this romaji: "${answer}". Accept romaji matching the reading with minor variations. Reply with JSON only, no preamble. correct: true/false. close: true/false. note: if correct, just the word and reading; if close, one factual sentence on what specifically was wrong; if wrong, just state the correct word and reading. Never use encouragement, praise, or softening language.`);
 
       const data = JSON.parse(result.replace(/\`\`\`json|\`\`\`/g, '').trim());
       if (data.correct) {
         status.className = 'gf-status correct';
-        status.textContent = '✓ ' + (data.note || 'Correct!');
+        status.textContent = '✓ ' + (data.note || rcCurrentWord);
         document.getElementById('rcCard').classList.add('revealed');
       } else if (data.close) {
         status.className = 'gf-status wrong';
-        status.textContent = '～ ' + (data.note || `Close — the word was ${rcCurrentWord}`);
+        status.textContent = '～ ' + (data.note || rcCurrentWord);
       } else {
         status.className = 'gf-status wrong';
-        status.textContent = '✗ ' + (data.note || `The word was ${rcCurrentWord} (${rcQueue[rcIndex].reading})`);
+        status.textContent = '✗ ' + (data.note || `${rcCurrentWord} (${rcQueue[rcIndex].reading})`);
       }
       document.getElementById('rcButtons').style.display = 'grid';
     } catch(e) {
